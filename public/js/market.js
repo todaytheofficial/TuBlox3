@@ -698,7 +698,7 @@
       try { captchaToken = hcaptcha.getResponse(hcaptchaWidgetId); } catch (e) {}
     }
 
-    if (!captchaToken && HCAPTCHA_SITEKEY !== '10000000-ffff-ffff-ffff-000000000000') {
+    if (!captchaToken && hcaptchaSiteKey !== '10000000-ffff-ffff-ffff-000000000000') {
       statusEl.className = 'item-buy-status error';
       statusEl.textContent = 'Please complete the captcha';
       return;
