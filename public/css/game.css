@@ -196,7 +196,6 @@ body {
   width: 45%;
   height: 50%;
   pointer-events: auto;
-  /* debug: border: 1px solid rgba(255,0,0,0.1); */
 }
 
 #mobile-joystick {
@@ -300,6 +299,47 @@ body {
   color: #ef4444;
 }
 
+/* USE / TOGGLE BUTTON */
+.mobile-btn-use {
+  width: 58px;
+  height: 58px;
+  border-color: rgba(255,224,102,0.3);
+  color: rgba(255,224,102,0.7);
+}
+
+.mobile-btn-use:active,
+.mobile-btn-use.pressed {
+  background: rgba(255,224,102,0.15);
+  border-color: rgba(255,224,102,0.6);
+  color: #FFE066;
+}
+
+.mobile-btn-use.item-on {
+  border-color: rgba(255,224,102,0.6);
+  color: #FFE066;
+  background: rgba(255,224,102,0.12);
+  box-shadow: 0 0 12px rgba(255,224,102,0.2);
+}
+
+.mobile-btn-use.shield-mode {
+  border-color: rgba(68,136,204,0.3);
+  color: rgba(68,136,204,0.7);
+}
+
+.mobile-btn-use.shield-mode:active,
+.mobile-btn-use.shield-mode.pressed {
+  border-color: rgba(68,136,204,0.6);
+  color: #4488CC;
+  background: rgba(68,136,204,0.15);
+}
+
+.mobile-btn-use.shield-mode.item-on {
+  border-color: rgba(68,136,204,0.6);
+  color: #66AAEE;
+  background: rgba(68,136,204,0.12);
+  box-shadow: 0 0 12px rgba(68,136,204,0.2);
+}
+
 .mobile-btn-chat {
   width: 48px;
   height: 48px;
@@ -308,6 +348,71 @@ body {
 .mobile-btn-menu {
   width: 48px;
   height: 48px;
+}
+
+/* ==================== MOBILE SLOT BAR ==================== */
+
+#mobile-slot-bar {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+  z-index: 16;
+}
+
+.mobile-slot {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.6);
+  color: rgba(255,255,255,0.3);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(4px);
+  position: relative;
+}
+
+.mobile-slot.active {
+  border-color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(255,255,255,0.1);
+}
+
+.mobile-slot.has-item {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5);
+}
+
+.mobile-slot.has-item.active {
+  border-color: rgba(255,255,255,0.6);
+  color: #fff;
+}
+
+.mobile-slot:active {
+  transform: scale(0.92);
+}
+
+.mobile-slot-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
 }
 
 /* KICKED OVERLAY */
@@ -469,17 +574,17 @@ body {
   .hud-top-right { top: 12px; right: 12px; }
 
   #chat-container {
-    bottom: 110px;
+    bottom: 130px;
     left: 12px;
-    width: 280px;
+    width: 260px;
   }
 
-  #chat-messages { max-height: 120px; }
+  #chat-messages { max-height: 100px; }
 
   .chat-msg { font-size: 11px; padding: 3px 8px; }
 
   #chat-input {
-    font-size: 16px; /* prevents iOS zoom */
+    font-size: 16px;
     padding: 8px 12px;
   }
 

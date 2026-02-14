@@ -6,6 +6,7 @@
   let thumbAnimations = {};
 
   // ==================== AUTH ====================
+
   async function checkAuth() {
     try {
       const res = await fetch('/api/me');
@@ -33,7 +34,8 @@
     }
   }
 
-  // ==================== LOAD GAMES FROM API ====================
+  // ==================== LOAD GAMES ====================
+
   async function loadGames() {
     const loadingEl = document.getElementById('games-loading');
     const emptyEl = document.getElementById('games-empty');
@@ -61,10 +63,7 @@
         gridEl.appendChild(card);
       });
 
-      // Запускаем анимации thumbnails
       startAllThumbnails();
-
-      // Обновляем онлайн
       updateOnline();
 
     } catch (e) {
@@ -81,13 +80,12 @@
     }
   }
 
-  // ==================== CREATE GAME CARD ====================
+  // ==================== GAME CARD ====================
+
   function createGameCard(game) {
     const card = document.createElement('div');
     card.className = `game-card${game.status === 'coming_soon' ? ' game-card-soon' : ''}`;
-    if (game.status !== 'coming_soon') {
-      card.dataset.place = game.slug;
-    }
+    if (game.status !== 'coming_soon') card.dataset.place = game.slug;
 
     if (game.status === 'coming_soon') {
       card.innerHTML = `
@@ -113,7 +111,10 @@
         <div class="game-thumb">
           <canvas id="${canvasId}" width="360" height="200"></canvas>
           <div class="game-overlay">
-            <button class="btn btn-play" data-play="${game.slug}">▶ Play</button>
+            <button class="btn btn-play" data-play="${game.slug}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Play
+            </button>
           </div>
         </div>
         <div class="game-info">
@@ -128,7 +129,6 @@
         </div>
       `;
 
-      // Play button
       const playBtn = card.querySelector('[data-play]');
       if (playBtn) {
         playBtn.addEventListener('click', (e) => {
@@ -137,7 +137,6 @@
         });
       }
 
-      // Card click
       card.addEventListener('click', () => {
         window.location.href = `/game?place=${game.slug}`;
       });
@@ -147,6 +146,7 @@
   }
 
   // ==================== THUMBNAIL ANIMATIONS ====================
+
   function startAllThumbnails() {
     gamesData.forEach(game => {
       if (game.status === 'coming_soon') return;
@@ -158,118 +158,72 @@
 
   function startThumbnailAnimation(canvas, game) {
     const c = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
+    const W = canvas.width, H = canvas.height;
     const style = game.thumbnail?.style || 'default';
     const label = game.thumbnail?.label || game.name.toUpperCase();
     const sublabel = game.thumbnail?.sublabel || '';
     let at = 0;
 
+    if (style === 'custom' && game.thumbnail?.customImage) {
+      const img = new Image();
+      img.onload = () => { c.drawImage(img, 0, 0, W, H); };
+      img.onerror = () => { drawDefaultThumb(); };
+      img.src = game.thumbnail.customImage;
+      return;
+    }
+
     function drawGrid() {
       c.strokeStyle = '#0f0f0f';
-      for (let x = 0; x < W; x += 24) {
-        c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke();
-      }
-      for (let y = 0; y < H; y += 24) {
-        c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
-      }
+      for (let x = 0; x < W; x += 24) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+      for (let y = 0; y < H; y += 24) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
     }
 
     function drawLabel() {
-      c.fillStyle = 'rgba(0,0,0,0.5)';
-      c.fillRect(0, 0, W, H);
-      c.font = '900 24px Inter';
-      c.fillStyle = '#fff';
-      c.textAlign = 'center';
+      c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0, 0, W, H);
+      c.font = '900 24px Inter'; c.fillStyle = '#fff'; c.textAlign = 'center';
       c.fillText(label, W / 2, H / 2 + 4);
-      c.font = '600 10px Inter';
-      c.fillStyle = '#555';
+      c.font = '600 10px Inter'; c.fillStyle = '#555';
       c.fillText(sublabel, W / 2, H / 2 + 20);
     }
 
+    function drawDefaultThumb() {
+      c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); drawGrid(); drawLabel();
+    }
+
     if (style === 'platformer') {
-      function framePlatformer(ts) {
-        at += 0.016;
-        const time = ts / 1000;
-        c.fillStyle = '#080808';
-        c.fillRect(0, 0, W, H);
-        drawGrid();
-
-        // Floor and platforms
-        c.fillStyle = '#1a1a1a';
-        c.fillRect(0, 165, W, 35);
-        c.fillStyle = '#2a2a2a';
-        c.fillRect(30, 120, 70, 10);
-        c.fillRect(140, 90, 70, 10);
-
-        // Characters
-        TC.draw(c, 45, 82, 22, 34, 1, 'run', Math.floor(at / 0.12) % 4,
-          { bodyColor: '#FFF', headColor: '#FFF', eyeColor: '#000' },
-          null, false, time, {});
-        TC.draw(c, 148, 56, 22, 34, -1,
-          Math.sin(time * 2) > 0 ? 'jump' : 'idle', 0,
-          { bodyColor: '#CCC', headColor: '#DDD', eyeColor: '#000' },
-          null, false, time, {});
-
-        drawLabel();
-        thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(framePlatformer);
-      }
-      thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(framePlatformer);
-
+      (function fp(ts) {
+        at += 0.016; const time = ts / 1000;
+        c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); drawGrid();
+        c.fillStyle = '#1a1a1a'; c.fillRect(0, 165, W, 35);
+        c.fillStyle = '#2a2a2a'; c.fillRect(30, 120, 70, 10); c.fillRect(140, 90, 70, 10);
+        TC.draw(c, 45, 82, 22, 34, 1, 'run', Math.floor(at / 0.12) % 4, { bodyColor: '#FFF', headColor: '#FFF', eyeColor: '#000' }, null, false, time, {});
+        TC.draw(c, 148, 56, 22, 34, -1, Math.sin(time * 2) > 0 ? 'jump' : 'idle', 0, { bodyColor: '#CCC', headColor: '#DDD', eyeColor: '#000' }, null, false, time, {});
+        drawLabel(); thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
+      })(0);
     } else if (style === 'pvp') {
-      function framePvp(ts) {
-        at += 0.016;
-        const time = ts / 1000;
-        c.fillStyle = '#080808';
-        c.fillRect(0, 0, W, H);
-        drawGrid();
-
-        // Floor and platform
-        c.fillStyle = '#1a1a1a';
-        c.fillRect(0, 155, W, 45);
-        c.fillStyle = '#2a2a2a';
-        c.fillRect(80, 115, 100, 10);
-
-        // Fighting characters
+      (function fp(ts) {
+        at += 0.016; const time = ts / 1000;
+        c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); drawGrid();
+        c.fillStyle = '#1a1a1a'; c.fillRect(0, 155, W, 45);
+        c.fillStyle = '#2a2a2a'; c.fillRect(80, 115, 100, 10);
         const atk = Math.sin(time * 4) > 0.7;
-        TC.draw(c, 110, 77, 22, 34, 1, 'idle', 0,
-          { bodyColor: '#FF4444', headColor: '#FF6666', eyeColor: '#000' },
-          null, false, time,
-          { activeItem: 'sword', attacking: atk, attackProgress: atk ? 0.4 : 0 });
-        TC.draw(c, 160, 77, 22, 34, -1, 'idle', 0,
-          { bodyColor: '#4488FF', headColor: '#66AAFF', eyeColor: '#000' },
-          null, false, time,
-          { activeItem: 'sword', attacking: !atk, attackProgress: !atk ? 0.4 : 0 });
-
-        drawLabel();
-        thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(framePvp);
-      }
-      thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(framePvp);
-
+        TC.draw(c, 110, 77, 22, 34, 1, 'idle', 0, { bodyColor: '#FF4444', headColor: '#FF6666', eyeColor: '#000' }, null, false, time, { activeItem: 'sword', attacking: atk, attackProgress: atk ? 0.4 : 0 });
+        TC.draw(c, 160, 77, 22, 34, -1, 'idle', 0, { bodyColor: '#4488FF', headColor: '#66AAFF', eyeColor: '#000' }, null, false, time, { activeItem: 'sword', attacking: !atk, attackProgress: !atk ? 0.4 : 0 });
+        drawLabel(); thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
+      })(0);
     } else {
-      // Default thumbnail — static with grid
-      function frameDefault(ts) {
+      (function fp(ts) {
         const time = ts / 1000;
-        c.fillStyle = '#080808';
-        c.fillRect(0, 0, W, H);
-        drawGrid();
-
-        // Simple idle character in center
-        c.fillStyle = '#1a1a1a';
-        c.fillRect(0, 155, W, 45);
-        TC.draw(c, W / 2 - 11, 117, 22, 34, 1, 'idle',
-          Math.floor(time / 0.5) % 2,
-          { bodyColor: '#AAA', headColor: '#BBB', eyeColor: '#000' },
-          null, false, time, {});
-
-        drawLabel();
-        thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(frameDefault);
-      }
-      thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(frameDefault);
+        c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); drawGrid();
+        c.fillStyle = '#1a1a1a'; c.fillRect(0, 155, W, 45);
+        TC.draw(c, W / 2 - 11, 117, 22, 34, 1, 'idle', Math.floor(time / 0.5) % 2, { bodyColor: '#AAA', headColor: '#BBB', eyeColor: '#000' }, null, false, time, {});
+        drawLabel(); thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
+      })(0);
     }
   }
 
-  // ==================== ONLINE COUNTS ====================
+  // ==================== ONLINE ====================
+
   async function updateOnline() {
     try {
       const res = await fetch('/api/online');
@@ -282,6 +236,7 @@
   }
 
   // ==================== DAILY REWARD ====================
+
   function showDailyReward(reward) {
     const el = document.getElementById('daily-reward');
     el.style.display = 'block';
@@ -299,28 +254,34 @@
 
     [1, 5, 10, 15].forEach(day => {
       const dot = document.getElementById(`ms-${day}`);
-      if (reward.dailyStrikes >= day) dot.classList.add('active');
+      if (dot && reward.dailyStrikes >= day) dot.classList.add('active');
     });
 
     const next = reward.nextMilestone;
     const nextEl = document.getElementById('daily-next');
     if (next.day) {
       const daysLeft = next.day - reward.dailyStrikes;
-      nextEl.innerHTML = `<img src="/img/daily.png" class="daily-next-icon"><span>${daysLeft} day${daysLeft !== 1 ? 's' : ''} until +${next.reward} Urus per day!</span>`;
+      nextEl.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" style="vertical-align:middle;margin-right:4px">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>${daysLeft} day${daysLeft !== 1 ? 's' : ''} until +${next.reward} Urus per day!</span>
+      `;
     } else {
-      nextEl.innerHTML = `<img src="/img/daily.png" class="daily-next-icon"><span>Max reward reached! +6 Urus per day!</span>`;
+      nextEl.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" style="vertical-align:middle;margin-right:4px">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Max reward reached! +6 Urus per day!</span>
+      `;
     }
 
-    document.getElementById('btn-claim').addEventListener('click', () => {
-      el.style.display = 'none';
-    });
-
-    el.querySelector('.daily-reward-overlay').addEventListener('click', () => {
-      el.style.display = 'none';
-    });
+    document.getElementById('btn-claim').addEventListener('click', () => { el.style.display = 'none'; });
+    el.querySelector('.daily-reward-overlay')?.addEventListener('click', () => { el.style.display = 'none'; });
   }
 
   // ==================== WELCOME AVATAR ====================
+
   function startWelcomeAvatar() {
     const canvas = document.getElementById('welcome-avatar');
     if (!canvas) return;
@@ -334,6 +295,7 @@
   }
 
   // ==================== UTILS ====================
+
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -341,12 +303,14 @@
   }
 
   // ==================== LOGOUT ====================
+
   document.getElementById('btn-logout').addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
     window.location.href = '/';
   });
 
   // ==================== INIT ====================
+
   async function init() {
     await checkAuth();
     await loadGames();

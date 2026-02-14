@@ -15,10 +15,6 @@ const PORT = 3000;
 const JWT_SECRET = 'tublox3_secret_key_2024';
 const MONGO_URI = 'mongodb+srv://Today_Idk:TpdauT434odayTodayToday23@cluster0.rlgkop5.mongodb.net/tublox3?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('[DB] MongoDB connected'))
-  .catch(err => console.error('[DB] MongoDB error:', err));
-
 // ==================== SCHEMAS ====================
 
 const userSchema = new mongoose.Schema({
@@ -37,7 +33,6 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now }
 });
-
 const User = mongoose.model('User', userSchema);
 
 const gameSchema = new mongoose.Schema({
@@ -50,7 +45,8 @@ const gameSchema = new mongoose.Schema({
     style: { type: String, default: 'default' },
     bgColor: { type: String, default: '#080808' },
     label: { type: String, default: '' },
-    sublabel: { type: String, default: '' }
+    sublabel: { type: String, default: '' },
+    customImage: { type: String, default: '' }
   },
   config: {
     gravity: { type: Number, default: 0.6 },
@@ -61,7 +57,11 @@ const gameSchema = new mongoose.Schema({
     spawnY: { type: Number, default: 200 },
     platforms: { type: Array, default: [] },
     checkpoints: { type: Array, default: [] },
-    items: { type: mongoose.Schema.Types.Mixed, default: {} }
+    items: { type: mongoose.Schema.Types.Mixed, default: {} },
+    spawnItems: { type: Array, default: [] },
+    collectibleItems: { type: Array, default: [] },
+    models: { type: Array, default: [] },
+    settings: { type: mongoose.Schema.Types.Mixed, default: {} }
   },
   maxPlayers: { type: Number, default: 20 },
   order: { type: Number, default: 0 },
@@ -69,12 +69,158 @@ const gameSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
-
 const Game = mongoose.model('Game', gameSchema);
+
+const studioItemSchema = new mongoose.Schema({
+  id: String,
+  type: { type: String, default: 'sword' },
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
+  giveOnStart: { type: Boolean, default: false },
+  collectOnTouch: { type: Boolean, default: true },
+  properties: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
+const studioBlockSchema = new mongoose.Schema({
+  id: String,
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
+  w: { type: Number, default: 100 },
+  h: { type: Number, default: 40 },
+  color: { type: String, default: '#333333' },
+  opacity: { type: Number, default: 1 },
+  text: { type: String, default: '' },
+  textFont: { type: String, default: 'Inter' },
+  textSize: { type: Number, default: 14 },
+  textColor: { type: String, default: '#ffffff' },
+  isSpawn: { type: Boolean, default: false }
+}, { _id: false });
+
+const studioModelSchema = new mongoose.Schema({
+  id: String,
+  type: { type: String, default: 'door_key' },
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
+  w: { type: Number, default: 40 },
+  h: { type: Number, default: 80 },
+  properties: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
+const studioGameSchema = new mongoose.Schema({
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  ownerUsername: { type: String, required: true },
+  title: { type: String, required: true, maxlength: 50 },
+  description: { type: String, default: '', maxlength: 200 },
+  thumbnailData: { type: String, default: '' },
+  status: { type: String, enum: ['private', 'public'], default: 'private' },
+  blocks: [studioBlockSchema],
+  items: [studioItemSchema],
+  models: [studioModelSchema],
+  settings: { type: mongoose.Schema.Types.Mixed, default: {
+    gravity: 0.6,
+    playerSpeed: 4,
+    jumpForce: -12,
+    spawnX: 100,
+    spawnY: 400,
+    bgColor: '#0a0a0a',
+    worldWidth: 2400,
+    worldHeight: 600
+  }},
+  plays: { type: Number, default: 0 },
+  published: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+const StudioGame = mongoose.model('StudioGame', studioGameSchema);
+
+// ==================== ASSET STORE DATA ====================
+
+const ASSET_STORE = [
+  {
+    id: 'sword',
+    name: 'Sword',
+    category: 'weapon',
+    icon: '⚔️',
+    description: 'Melee weapon for PVP combat',
+    defaults: { damage: 20, range: 50, cooldown: 500 }
+  },
+  {
+    id: 'flashlight',
+    name: 'Flashlight',
+    category: 'tool',
+    icon: '🔦',
+    description: 'Illuminates dark areas',
+    defaults: { radius: 200, brightness: 1 }
+  },
+  {
+    id: 'shield',
+    name: 'Shield',
+    category: 'defense',
+    icon: '🛡️',
+    description: 'Blocks incoming damage',
+    defaults: { blockChance: 0.5, durability: 100 }
+  },
+  {
+    id: 'speed_boost',
+    name: 'Speed Boost',
+    category: 'powerup',
+    icon: '⚡',
+    description: 'Temporarily increases speed',
+    defaults: { multiplier: 1.5, duration: 5000 }
+  },
+  {
+    id: 'jump_boost',
+    name: 'Jump Boost',
+    category: 'powerup',
+    icon: '🦘',
+    description: 'Temporarily increases jump height',
+    defaults: { multiplier: 1.5, duration: 5000 }
+  },
+  {
+    id: 'coin',
+    name: 'Coin',
+    category: 'collectible',
+    icon: '🪙',
+    description: 'Collectible currency',
+    defaults: { value: 1 }
+  },
+  {
+    id: 'heart',
+    name: 'Heart',
+    category: 'collectible',
+    icon: '❤️',
+    description: 'Restores health',
+    defaults: { healAmount: 25 }
+  },
+  {
+    id: 'key',
+    name: 'Key',
+    category: 'tool',
+    icon: '🔑',
+    description: 'Opens locked doors',
+    defaults: {}
+  },
+  {
+    id: 'battery',
+    name: 'Battery',
+    category: 'tool',
+    icon: '🔋',
+    description: 'Recharges flashlight',
+    defaults: { recharge: 25 }
+  },
+  {
+    id: 'note',
+    name: 'Note',
+    category: 'collectible',
+    icon: '📝',
+    description: 'Readable note',
+    defaults: { text: 'An old note...' }
+  }
+];
 
 // ==================== MIDDLEWARE ====================
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -91,34 +237,31 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ==================== DAILY STRIKES LOGIC ====================
+// ==================== DAILY STRIKES ====================
 
-function getStrikeReward(strikes) {
-  if (strikes >= 15) return 6;
-  if (strikes >= 10) return 4;
-  if (strikes >= 5) return 2;
+function getStrikeReward(s) {
+  if (s >= 15) return 6;
+  if (s >= 10) return 4;
+  if (s >= 5) return 2;
   return 1;
 }
 
-function getNextMilestone(strikes) {
-  if (strikes < 5) return { day: 5, reward: 2 };
-  if (strikes < 10) return { day: 10, reward: 4 };
-  if (strikes < 15) return { day: 15, reward: 6 };
+function getNextMilestone(s) {
+  if (s < 5) return { day: 5, reward: 2 };
+  if (s < 10) return { day: 10, reward: 4 };
+  if (s < 15) return { day: 15, reward: 6 };
   return { day: null, reward: 6 };
 }
 
-function getDayStart(date) {
-  const d = new Date(date);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function getDayStart(d) {
+  const x = new Date(d);
+  return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
 }
 
 async function checkDailyReward(user) {
   const now = new Date();
   const todayStart = getDayStart(now);
-
-  let rewarded = false;
-  let rewardAmount = 0;
-  let streakReset = false;
+  let rewarded = false, rewardAmount = 0, streakReset = false;
 
   if (!user.lastDailyReward) {
     user.dailyStrikes = 1;
@@ -127,9 +270,7 @@ async function checkDailyReward(user) {
     user.lastDailyReward = now;
     rewarded = true;
   } else {
-    const lastStart = getDayStart(user.lastDailyReward);
-    const diffDays = Math.floor((todayStart - lastStart) / (24 * 60 * 60 * 1000));
-
+    const diffDays = Math.floor((todayStart - getDayStart(user.lastDailyReward)) / 86400000);
     if (diffDays === 0) {
       rewarded = false;
     } else if (diffDays === 1) {
@@ -148,9 +289,7 @@ async function checkDailyReward(user) {
     }
   }
 
-  if (rewarded) {
-    await user.save();
-  }
+  if (rewarded) await user.save();
 
   return {
     rewarded,
@@ -171,45 +310,28 @@ app.get('/auth', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/a
 app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/profile.html')));
 app.get('/avatar', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/avatar.html')));
 app.get('/game', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/game.html')));
+app.get('/create', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/create.html')));
 app.get('/studio', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio.html')));
-
-// В секции API добавь переменную для сдвига времени (после PLACES_CACHE):
-let timerOffsetMs = 0; // Админский сдвиг таймера в миллисекундах
-const STUDIO_TARGET = Date.UTC(2026, 1, 14, 9, 25, 30, 0); // 14 фев 2026, 12:25:30 MSK
-
-// Обнови /api/time:
-app.get('/api/time', (req, res) => {
-  const now = Date.now();
-  const remainingMs = (STUDIO_TARGET + timerOffsetMs) - now;
-  res.json({
-    remainingMs: remainingMs,
-    serverNow: now,
-    offsetMs: timerOffsetMs
-  });
-});
-
+app.get('/studio/edit', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio-editor.html')));
 
 // ==================== AUTH API ====================
 
 app.post('/api/register', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
     if (username.length < 3 || username.length > 20) return res.status(400).json({ error: 'Username must be 3-20 chars' });
     if (password.length < 4) return res.status(400).json({ error: 'Password must be 4+ chars' });
     if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'Letters, numbers, underscores only' });
-
     const existing = await User.findOne({ username: username.toLowerCase() });
     if (existing) return res.status(400).json({ error: 'Username taken' });
-
     const hashed = await bcrypt.hash(password, 10);
     const user = new User({ username: username.toLowerCase(), password: hashed });
     await user.save();
-
     const reward = await checkDailyReward(user);
-
     const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('token', token, { httpOnly: false, maxAge: 604800000 });
     res.json({ success: true, username: user.username, dailyReward: reward });
   } catch (e) {
     console.error('[Register]', e);
@@ -219,22 +341,18 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Fill all fields' });
-
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
-
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
-
     user.lastLogin = new Date();
     await user.save();
-
     const reward = await checkDailyReward(user);
-
     const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('token', token, { httpOnly: false, maxAge: 604800000 });
     res.json({ success: true, username: user.username, dailyReward: reward });
   } catch (e) {
     console.error('[Login]', e);
@@ -244,21 +362,14 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/me', authMiddleware, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'Not found' });
-
     const reward = await checkDailyReward(user);
-
     res.json({
-      username: user.username,
-      avatar: user.avatar,
-      bio: user.bio,
-      urus: user.urus,
-      dailyStrikes: user.dailyStrikes,
-      dailyReward: reward,
-      gamesPlayed: user.gamesPlayed,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin
+      username: user.username, avatar: user.avatar, bio: user.bio,
+      urus: user.urus, dailyStrikes: user.dailyStrikes, dailyReward: reward,
+      gamesPlayed: user.gamesPlayed, createdAt: user.createdAt, lastLogin: user.lastLogin
     });
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
@@ -301,18 +412,19 @@ app.post('/api/bio', authMiddleware, async (req, res) => {
 
 app.get('/api/games', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const games = await Game.find({ status: { $ne: 'disabled' } })
       .select('slug name description type status thumbnail order totalPlays maxPlayers')
       .sort({ order: 1 });
     res.json(games);
   } catch (e) {
-    console.error('[Games API]', e);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 app.get('/api/games/:slug', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const game = await Game.findOne({ slug: req.params.slug, status: 'active' });
     if (!game) return res.status(404).json({ error: 'Game not found' });
     res.json(game);
@@ -323,23 +435,253 @@ app.get('/api/games/:slug', async (req, res) => {
 
 app.get('/api/online', (req, res) => {
   const counts = {};
-  for (const [roomId, room] of Object.entries(rooms)) {
+  for (const [, room] of Object.entries(rooms)) {
     counts[room.place] = (counts[room.place] || 0) + Object.keys(room.players).length;
   }
   res.json(counts);
 });
 
-// ==================== GAME WORLDS (DB + CACHE) ====================
+// ==================== ASSET STORE API ====================
+
+app.get('/api/assets', (req, res) => {
+  res.json(ASSET_STORE);
+});
+
+// ==================== STUDIO API ====================
+
+app.get('/api/studio/my-games', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const games = await StudioGame.find({ owner: req.userId })
+      .select('title description thumbnailData status plays published createdAt updatedAt')
+      .sort({ updatedAt: -1 });
+    res.json(games);
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/studio/create', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const user = await User.findById(req.userId).select('username');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const count = await StudioGame.countDocuments({ owner: req.userId });
+    if (count >= 20) return res.status(400).json({ error: 'Max 20 games' });
+
+    const game = new StudioGame({
+      owner: req.userId,
+      ownerUsername: user.username,
+      title: 'Untitled Game',
+      blocks: [{
+        id: 'block_' + Date.now(), x: 0, y: 500, w: 2400, h: 40,
+        color: '#333333', opacity: 1, text: '', textFont: 'Inter',
+        textSize: 14, textColor: '#ffffff', isSpawn: false
+      }],
+      items: [],
+      models: [],
+      settings: {
+        gravity: 0.6, playerSpeed: 4, jumpForce: -12,
+        spawnX: 100, spawnY: 400, bgColor: '#0a0a0a',
+        worldWidth: 2400, worldHeight: 600
+      }
+    });
+    await game.save();
+    res.json({ success: true, gameId: game._id });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/studio/game/:id', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    res.json(game);
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/studio/save/:id', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    const { title, description, blocks, items, models, settings, thumbnailData } = req.body;
+    if (title) game.title = title.substring(0, 50);
+    if (description !== undefined) game.description = description.substring(0, 200);
+    if (Array.isArray(blocks)) game.blocks = blocks;
+    if (Array.isArray(items)) game.items = items;
+    if (Array.isArray(models)) game.models = models;
+    if (settings && typeof settings === 'object') game.settings = { ...game.settings, ...settings };
+    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 100000);
+    game.updatedAt = new Date();
+    game.markModified('settings');
+    game.markModified('models');
+    game.markModified('items');
+    await game.save();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Save]', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/studio/publish/:id', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    const { status, title, description, thumbnailData } = req.body;
+    if (!['public', 'private'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
+    if (title) game.title = title.substring(0, 50);
+    if (description !== undefined) game.description = description.substring(0, 200);
+    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 100000);
+    game.status = status;
+    game.published = true;
+    game.updatedAt = new Date();
+    await game.save();
+
+    if (status === 'public') {
+      const slug = `studio_${game._id}`;
+      const existing = await Game.findOne({ slug });
+
+      const gameItems = Array.isArray(game.items) ? game.items : [];
+      const gameModels = Array.isArray(game.models) ? game.models : [];
+      const gameSettings = game.settings || {};
+
+      const spawnItems = gameItems.filter(i => i && i.giveOnStart);
+      const collectibleItems = gameItems.filter(i => i && (i.collectOnTouch !== false));
+
+      const gameConfig = {
+        gravity: gameSettings.gravity || 0.6,
+        maxFallSpeed: 12,
+        playerSpeed: gameSettings.playerSpeed || 4,
+        jumpForce: gameSettings.jumpForce || -12,
+        spawnX: gameSettings.spawnX || 100,
+        spawnY: gameSettings.spawnY || 400,
+        platforms: (Array.isArray(game.blocks) ? game.blocks : []).map(b => ({
+          x: b.x, y: b.y, w: b.w, h: b.h, color: b.color,
+          opacity: b.opacity, text: b.text, textFont: b.textFont,
+          textSize: b.textSize, textColor: b.textColor
+        })),
+        checkpoints: [],
+        items: {},
+        spawnItems: spawnItems.map(i => ({
+          type: i.type,
+          properties: i.properties || {}
+        })),
+        collectibleItems: collectibleItems.filter(i => !i.giveOnStart).map(i => ({
+          type: i.type,
+          x: i.x,
+          y: i.y,
+          properties: i.properties || {},
+          collectOnTouch: i.collectOnTouch !== false
+        })),
+        models: gameModels.map(m => ({
+          id: m.id,
+          type: m.type,
+          x: m.x,
+          y: m.y,
+          w: m.w || 40,
+          h: m.h || 80,
+          properties: m.properties || {}
+        })),
+        settings: gameSettings
+      };
+
+      // Build items config for inventory system
+      gameItems.forEach(i => {
+        if (!i) return;
+        if (!gameConfig.items[i.type]) {
+          const asset = ASSET_STORE.find(a => a.id === i.type);
+          gameConfig.items[i.type] = { name: asset ? asset.name : i.type, ...(i.properties || {}) };
+        }
+      });
+
+      const thumbStyle = game.thumbnailData ? 'custom' : 'default';
+
+      if (existing) {
+        existing.name = game.title;
+        existing.description = game.description || `by ${game.ownerUsername}`;
+        existing.config = gameConfig;
+        existing.updatedAt = new Date();
+        existing.status = 'active';
+        existing.thumbnail = {
+          style: thumbStyle,
+          label: game.title.toUpperCase(),
+          sublabel: `by ${game.ownerUsername}`,
+          customImage: game.thumbnailData || ''
+        };
+        existing.markModified('config');
+        await existing.save();
+      } else {
+        await new Game({
+          slug, name: game.title,
+          description: game.description || `by ${game.ownerUsername}`,
+          type: 'platformer', status: 'active',
+          thumbnail: {
+            style: thumbStyle,
+            label: game.title.toUpperCase(),
+            sublabel: `by ${game.ownerUsername}`,
+            customImage: game.thumbnailData || ''
+          },
+          config: gameConfig, maxPlayers: 20,
+          order: 100 + Math.floor(Math.random() * 900)
+        }).save();
+      }
+      clearPlaceCache(slug);
+    } else {
+      await Game.deleteOne({ slug: `studio_${game._id}` });
+      clearPlaceCache(`studio_${game._id}`);
+    }
+
+    res.json({ success: true, status: game.status });
+  } catch (e) {
+    console.error('[Publish]', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.delete('/api/studio/game/:id', authMiddleware, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    await Game.deleteOne({ slug: `studio_${game._id}` });
+    clearPlaceCache(`studio_${game._id}`);
+    await StudioGame.deleteOne({ _id: game._id });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== TIME API ====================
+
+let timerOffsetMs = 0;
+const STUDIO_TARGET = Date.UTC(2026, 1, 14, 9, 25, 30, 0);
+
+app.get('/api/time', (req, res) => {
+  res.json({
+    remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
+    serverNow: Date.now(),
+    offsetMs: timerOffsetMs
+  });
+});
+
+// ==================== GAME WORLDS ====================
 
 const PLACES_CACHE = {};
 
 async function getPlaceConfig(slug) {
   if (PLACES_CACHE[slug]) return PLACES_CACHE[slug];
-
   const game = await Game.findOne({ slug, status: 'active' });
   if (!game) return null;
-
-  const placeData = {
+  const pd = {
     name: game.name,
     type: game.type,
     gravity: game.config.gravity,
@@ -348,14 +690,18 @@ async function getPlaceConfig(slug) {
     jumpForce: game.config.jumpForce,
     spawnX: game.config.spawnX,
     spawnY: game.config.spawnY,
-    platforms: game.config.platforms,
+    platforms: game.config.platforms || [],
     checkpoints: game.config.checkpoints || [],
     items: game.config.items || {},
-    maxPlayers: game.maxPlayers
+    maxPlayers: game.maxPlayers,
+    spawnItems: game.config.spawnItems || [],
+    collectibleItems: game.config.collectibleItems || [],
+    models: game.config.models || [],
+    settings: game.config.settings || {},
+    blocks: game.config.platforms || []
   };
-
-  PLACES_CACHE[slug] = placeData;
-  return placeData;
+  PLACES_CACHE[slug] = pd;
+  return pd;
 }
 
 function clearPlaceCache(slug) {
@@ -366,7 +712,6 @@ function clearPlaceCache(slug) {
 
 const rooms = {};
 const playerRooms = {};
-// Anti-duplicate: userId -> socketId mapping
 const activeUserSessions = {};
 
 function getOrCreateRoom(placeName, maxPlayers = 20) {
@@ -381,21 +726,21 @@ function getOrCreateRoom(placeName, maxPlayers = 20) {
 function removePlayerFromAllRooms(socketId) {
   const roomId = playerRooms[socketId];
   if (roomId && rooms[roomId]) {
-    const player = rooms[roomId].players[socketId];
     delete rooms[roomId].players[socketId];
     io.to(roomId).emit('player-left', { id: socketId });
-    if (Object.keys(rooms[roomId].players).length === 0) {
-      delete rooms[roomId];
-    }
+    if (Object.keys(rooms[roomId].players).length === 0) delete rooms[roomId];
   }
   delete playerRooms[socketId];
 }
 
 io.on('connection', (socket) => {
 
-  // ---- JOIN GAME ----
   socket.on('join-game', async (data) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return socket.emit('error-msg', 'Server is starting up, please retry in a moment');
+      }
+
       const { token, place } = data;
       if (!token || !place) return;
 
@@ -413,7 +758,6 @@ io.on('connection', (socket) => {
       const placeData = await getPlaceConfig(place);
       if (!placeData) return socket.emit('error-msg', 'TuGame not found');
 
-      // === ANTI-DUPLICATE: kick old session ===
       const oldSocketId = activeUserSessions[userId];
       if (oldSocketId && oldSocketId !== socket.id) {
         const oldSocket = io.sockets.sockets.get(oldSocketId);
@@ -422,19 +766,11 @@ io.on('connection', (socket) => {
           removePlayerFromAllRooms(oldSocketId);
           oldSocket.disconnect(true);
         }
-        delete activeUserSessions[userId];
       }
-
-      // Check if this socket is already in a room
-      if (playerRooms[socket.id]) {
-        removePlayerFromAllRooms(socket.id);
-      }
-
-      // Register active session
+      if (playerRooms[socket.id]) removePlayerFromAllRooms(socket.id);
       activeUserSessions[userId] = socket.id;
       socket._userId = userId;
 
-      // Increment plays (only once per actual join, not per tab spam)
       user.gamesPlayed += 1;
       await user.save();
       await Game.updateOne({ slug: place }, { $inc: { totalPlays: 1 } });
@@ -444,50 +780,45 @@ io.on('connection', (socket) => {
       playerRooms[socket.id] = roomId;
 
       let inventory = [null, null, null, null];
-      if (placeData.type === 'pvp' && placeData.items && placeData.items.sword) {
-        inventory[0] = {
-          id: 'sword',
-          name: placeData.items.sword.name,
-          damage: placeData.items.sword.damage,
-          range: placeData.items.sword.range,
-          cooldown: placeData.items.sword.cooldown
-        };
+
+      // Give spawn items
+      if (placeData.spawnItems && Array.isArray(placeData.spawnItems) && placeData.spawnItems.length > 0) {
+        placeData.spawnItems.forEach((si, idx) => {
+          if (idx < 4 && si) {
+            const asset = ASSET_STORE.find(a => a.id === si.type);
+            inventory[idx] = { id: si.type, name: asset ? asset.name : si.type, ...(si.properties || {}) };
+          }
+        });
+      }
+
+      // Fallback for PVP type
+      if (placeData.type === 'pvp' && placeData.items?.sword && !inventory.some(i => i && i.id === 'sword')) {
+        const emptySlot = inventory.indexOf(null);
+        if (emptySlot !== -1) {
+          inventory[emptySlot] = {
+            id: 'sword', name: 'Sword',
+            damage: placeData.items.sword.damage || 20,
+            range: placeData.items.sword.range || 50,
+            cooldown: placeData.items.sword.cooldown || 500
+          };
+        }
       }
 
       const playerData = {
-        id: socket.id,
-        username: user.username,
-        x: placeData.spawnX,
-        y: placeData.spawnY,
-        vx: 0,
-        vy: 0,
-        width: 32,
-        height: 48,
-        onGround: false,
-        direction: 1,
-        state: 'idle',
-        frame: 0,
-        checkpoint: { x: placeData.spawnX, y: placeData.spawnY },
-        currentCheckpointIndex: -1,
-        avatar: user.avatar,
-        hp: 100,
-        maxHp: 100,
-        inventory,
-        activeSlot: 0,
-        attacking: false,
-        lastAttackTime: 0
+        id: socket.id, username: user.username,
+        x: placeData.spawnX, y: placeData.spawnY, vx: 0, vy: 0,
+        width: 32, height: 48, onGround: false, direction: 1, state: 'idle', frame: 0,
+        checkpoint: { x: placeData.spawnX, y: placeData.spawnY }, currentCheckpointIndex: -1,
+        avatar: user.avatar, hp: 100, maxHp: 100,
+        inventory, activeSlot: 0, attacking: false, lastAttackTime: 0
       };
 
       rooms[roomId].players[socket.id] = playerData;
 
       socket.emit('game-init', {
-        place: placeData,
-        placeName: place,
-        player: playerData,
-        players: rooms[roomId].players,
-        roomId
+        place: placeData, placeName: place, player: playerData,
+        players: rooms[roomId].players, roomId
       });
-
       socket.to(roomId).emit('player-joined', playerData);
     } catch (e) {
       console.error('[join-game]', e);
@@ -495,119 +826,31 @@ io.on('connection', (socket) => {
     }
   });
 
-    // ---- STUDIO: Timer Control (admin only) ----
-  socket.on('studio-join', async (data) => {
-    try {
-      if (!data.token) return;
-      const decoded = jwt.verify(data.token, JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('username');
-      if (!user) return;
-
-      socket._studioUser = user.username;
-      socket.join('studio-room');
-
-      // Отправляем текущий оффсет
-      socket.emit('studio-sync', {
-        offsetMs: timerOffsetMs,
-        remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
-        isAdmin: user.username === 'today_idk'
-      });
-    } catch (e) {}
-  });
-
-  socket.on('studio-adjust-time', async (data) => {
-    try {
-      if (!socket._studioUser || socket._studioUser !== 'today_idk') return;
-
-      const { action, amount } = data;
-      if (!action || !amount) return;
-
-      const ms = parseInt(amount);
-      if (isNaN(ms)) return;
-
-      switch(action) {
-        case 'add-hours':
-          timerOffsetMs += ms * 60 * 60 * 1000;
-          break;
-        case 'sub-hours':
-          timerOffsetMs -= ms * 60 * 60 * 1000;
-          break;
-        case 'add-minutes':
-          timerOffsetMs += ms * 60 * 1000;
-          break;
-        case 'sub-minutes':
-          timerOffsetMs -= ms * 60 * 1000;
-          break;
-        case 'add-seconds':
-          timerOffsetMs += ms * 1000;
-          break;
-        case 'sub-seconds':
-          timerOffsetMs -= ms * 1000;
-          break;
-        case 'reset':
-          timerOffsetMs = 0;
-          break;
-      }
-
-      // Отправляем всем в studio-room
-      const remaining = (STUDIO_TARGET + timerOffsetMs) - Date.now();
-      io.to('studio-room').emit('studio-timer-update', {
-        offsetMs: timerOffsetMs,
-        remainingMs: remaining,
-        adjustedBy: socket._studioUser,
-        action: action,
-        amount: ms
-      });
-
-      console.log(`[Studio] ${socket._studioUser} adjusted timer: ${action} ${ms} (offset: ${timerOffsetMs}ms)`);
-    } catch (e) {
-      console.error('[Studio adjust]', e);
-    }
-  });
-  
-  // ---- PLAYER UPDATE ----
   socket.on('player-update', (data) => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
     const p = rooms[roomId].players[socket.id];
     if (!p) return;
 
-    p.x = data.x;
-    p.y = data.y;
-    p.vx = data.vx;
-    p.vy = data.vy;
-    p.direction = data.direction;
-    p.state = data.state;
-    p.frame = data.frame;
-    p.onGround = data.onGround;
-    p.activeSlot = data.activeSlot || 0;
+    p.x = data.x; p.y = data.y; p.vx = data.vx; p.vy = data.vy;
+    p.direction = data.direction; p.state = data.state; p.frame = data.frame;
+    p.onGround = data.onGround; p.activeSlot = data.activeSlot || 0;
     p.attacking = data.attacking || false;
 
     if (p.y > 700) {
-      p.x = p.checkpoint.x;
-      p.y = p.checkpoint.y;
-      p.vx = 0;
-      p.vy = 0;
-      p.hp = p.maxHp;
+      p.x = p.checkpoint.x; p.y = p.checkpoint.y;
+      p.vx = 0; p.vy = 0; p.hp = p.maxHp;
       socket.emit('player-respawn', { x: p.x, y: p.y, hp: p.hp });
     }
 
     socket.to(roomId).emit('player-moved', {
-      id: socket.id,
-      x: p.x,
-      y: p.y,
-      vx: p.vx,
-      vy: p.vy,
-      direction: p.direction,
-      state: p.state,
-      frame: p.frame,
-      activeSlot: p.activeSlot,
-      attacking: p.attacking,
-      hp: p.hp
+      id: socket.id, x: p.x, y: p.y, vx: p.vx, vy: p.vy,
+      direction: p.direction, state: p.state, frame: p.frame,
+      activeSlot: p.activeSlot, attacking: p.attacking, hp: p.hp,
+      itemState: data.itemState || {}
     });
   });
 
-  // ---- ATTACK ----
   socket.on('attack', async () => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
@@ -616,7 +859,7 @@ io.on('connection', (socket) => {
 
     const now = Date.now();
     const item = atk.inventory[atk.activeSlot];
-    if (!item || item.id !== 'sword' || now - atk.lastAttackTime < item.cooldown) return;
+    if (!item || item.id !== 'sword' || now - atk.lastAttackTime < (item.cooldown || 500)) return;
 
     atk.lastAttackTime = now;
     atk.attacking = true;
@@ -626,25 +869,18 @@ io.on('connection', (socket) => {
 
     for (const [id, target] of Object.entries(rooms[roomId].players)) {
       if (id === socket.id) continue;
-
-      const dx = target.x - atk.x;
-      const dy = target.y - atk.y;
+      const dx = target.x - atk.x, dy = target.y - atk.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const inFront = (atk.direction === 1 && dx > 0) || (atk.direction === -1 && dx < 0);
 
-      if (dist < item.range + 30 && inFront && Math.abs(dy) < 40) {
-        target.hp -= item.damage;
-        const kb = atk.direction * 8;
-        io.to(id).emit('player-hit', { hp: target.hp, knockX: kb, knockY: -5 });
+      if (dist < (item.range || 50) + 30 && inFront && Math.abs(dy) < 40) {
+        target.hp -= (item.damage || 20);
+        io.to(id).emit('player-hit', { hp: target.hp, knockX: atk.direction * 8, knockY: -5 });
 
         if (target.hp <= 0) {
           target.hp = target.maxHp;
-          if (placeData) {
-            target.x = placeData.spawnX;
-            target.y = placeData.spawnY;
-          }
-          target.vx = 0;
-          target.vy = 0;
+          if (placeData) { target.x = placeData.spawnX; target.y = placeData.spawnY; }
+          target.vx = 0; target.vy = 0;
           io.to(id).emit('player-respawn', { x: target.x, y: target.y, hp: target.hp });
           io.to(roomId).emit('kill-feed', { killer: atk.username, victim: target.username });
         }
@@ -654,7 +890,18 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('player-attack', { id: socket.id });
   });
 
-  // ---- CHECKPOINT ----
+  socket.on('collect-item', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p) return;
+    const emptySlot = p.inventory.indexOf(null);
+    if (emptySlot !== -1 && data.item) {
+      p.inventory[emptySlot] = data.item;
+      socket.emit('inventory-update', { inventory: p.inventory });
+    }
+  });
+
   socket.on('checkpoint-reached', (data) => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
@@ -662,7 +909,6 @@ io.on('connection', (socket) => {
     if (p) p.checkpoint = { x: data.x, y: data.y };
   });
 
-  // ---- CHAT ----
   socket.on('chat-message', (data) => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
@@ -671,7 +917,6 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('chat-message', { username: p.username, msg: data.msg.trim() });
   });
 
-  // ---- SWITCH SLOT ----
   socket.on('switch-slot', (data) => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
@@ -681,9 +926,51 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ---- DISCONNECT ----
+  // Studio timer
+  socket.on('studio-join', async (data) => {
+    try {
+      if (!data.token) return;
+      if (mongoose.connection.readyState !== 1) return;
+      const decoded = jwt.verify(data.token, JWT_SECRET);
+      const user = await User.findById(decoded.userId).select('username');
+      if (!user) return;
+      socket._studioUser = user.username;
+      socket.join('studio-room');
+      socket.emit('studio-sync', {
+        offsetMs: timerOffsetMs,
+        remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
+        isAdmin: user.username === 'today_idk'
+      });
+    } catch (e) {}
+  });
+
+  socket.on('studio-adjust-time', (data) => {
+    if (!socket._studioUser || socket._studioUser !== 'today_idk') return;
+    const { action, amount } = data;
+    if (!action || amount === undefined) return;
+    const ms = parseInt(amount);
+    if (isNaN(ms)) return;
+
+    switch (action) {
+      case 'add-hours': timerOffsetMs += ms * 3600000; break;
+      case 'sub-hours': timerOffsetMs -= ms * 3600000; break;
+      case 'add-minutes': timerOffsetMs += ms * 60000; break;
+      case 'sub-minutes': timerOffsetMs -= ms * 60000; break;
+      case 'add-seconds': timerOffsetMs += ms * 1000; break;
+      case 'sub-seconds': timerOffsetMs -= ms * 1000; break;
+      case 'reset': timerOffsetMs = 0; break;
+    }
+
+    io.to('studio-room').emit('studio-timer-update', {
+      offsetMs: timerOffsetMs,
+      remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
+      adjustedBy: socket._studioUser,
+      action,
+      amount: ms
+    });
+  });
+
   socket.on('disconnect', () => {
-    // Clean up active session tracking
     if (socket._userId && activeUserSessions[socket._userId] === socket.id) {
       delete activeUserSessions[socket._userId];
     }
@@ -691,6 +978,33 @@ io.on('connection', (socket) => {
   });
 });
 
-// ==================== START ====================
+// ==================== STARTUP ====================
 
-server.listen(PORT, () => console.log(`[Tublox3] http://localhost:${PORT}`));
+async function start() {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      retryWrites: true
+    });
+    console.log('[DB] MongoDB connected');
+
+    server.listen(PORT, () => {
+      console.log(`[Tublox3] http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('[DB] Failed to connect to MongoDB:', err.message);
+    process.exit(1);
+  }
+}
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('[DB] MongoDB disconnected, attempting reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('[DB] MongoDB runtime error:', err.message);
+});
+
+start();

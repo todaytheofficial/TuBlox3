@@ -39,7 +39,7 @@
 
     <!-- MOBILE CONTROLS -->
     <div id="mobile-controls" style="display:none">
-      <!-- Left side: D-Pad / Joystick -->
+      <!-- Left side: Joystick -->
       <div id="mobile-joystick-zone">
         <div id="mobile-joystick">
           <div id="mobile-joystick-knob"></div>
@@ -60,6 +60,13 @@
             <path d="M2 22l2-2"/>
           </svg>
         </button>
+        <!-- USE / TOGGLE BUTTON (flashlight, shield, etc.) -->
+        <button id="mobile-btn-use" class="mobile-btn mobile-btn-use" style="display:none">
+          <svg id="mobile-btn-use-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
         <button id="mobile-btn-chat" class="mobile-btn mobile-btn-chat">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
@@ -72,6 +79,14 @@
             <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
+      </div>
+
+      <!-- MOBILE SLOT SWITCHER (bottom center) -->
+      <div id="mobile-slot-bar">
+        <button class="mobile-slot" data-slot="0">1</button>
+        <button class="mobile-slot" data-slot="1">2</button>
+        <button class="mobile-slot" data-slot="2">3</button>
+        <button class="mobile-slot" data-slot="3">4</button>
       </div>
     </div>
 
