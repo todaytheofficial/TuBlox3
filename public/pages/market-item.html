@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox - Item Details</title>
+  <link rel="stylesheet" href="/css/market-item.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+<body>
+  <div id="app">
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="sidebar-top">
+        <a href="/home" class="logo-link">
+          <img src="/img/logo.png" alt="Tublox" class="sidebar-logo-img">
+          <span class="logo">TUBLOX</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/home" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="/studio" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>Studio</span>
+        </a>
+        <a href="/profile" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+          <span>Profile</span>
+        </a>
+        <a href="/avatar" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg>
+          <span>Avatar</span>
+        </a>
+        <a href="/market" class="nav-item active">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <span>Market</span>
+        </a>
+      </nav>
+      <div class="sidebar-currency">
+        <div class="currency-item">
+          <img src="/img/urus.png" alt="Urus" class="currency-icon">
+          <span class="currency-amount" id="sidebar-urus">0</span>
+        </div>
+        <div class="currency-item">
+          <img src="/img/daily.png" alt="Strikes" class="currency-icon">
+          <span class="currency-amount" id="sidebar-strikes">0</span>
+        </div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="user-card">
+          <canvas id="sidebar-avatar" width="40" height="40"></canvas>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-username">...</span>
+            <span class="user-status">Online</span>
+          </div>
+        </div>
+        <button id="btn-logout" class="btn-logout">Logout</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="main">
+      <!-- Loading State -->
+      <div id="page-loading" class="page-loading">
+        <div class="spinner"></div>
+        <span>Loading item...</span>
+      </div>
+
+      <!-- Error State -->
+      <div id="page-error" class="page-error" style="display:none">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <h2>Item Not Found</h2>
+        <p>This item doesn't exist or has been removed.</p>
+        <a href="/market" class="btn btn-white">← Back to Market</a>
+      </div>
+
+      <!-- Item Content -->
+      <div id="page-content" style="display:none">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+          <a href="/market">Market</a>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <span id="breadcrumb-cat">Category</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <span id="breadcrumb-name" class="breadcrumb-current">Item</span>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="item-hero">
+          <!-- Left: Big Preview -->
+          <div class="item-hero-left">
+            <div class="item-preview-big" id="preview-container">
+              <canvas id="item-big-canvas" width="360" height="300"></canvas>
+              <div class="preview-badges">
+                <span class="item-rarity-badge" id="hero-rarity">COMMON</span>
+                <span class="item-limited-badge" id="hero-limited" style="display:none">LIMITED</span>
+              </div>
+            </div>
+            <!-- Color Selector -->
+            <div class="color-selector" id="color-selector" style="display:none">
+              <label>Color Variants</label>
+              <div class="color-options" id="color-options"></div>
+            </div>
+          </div>
+
+          <!-- Right: Info -->
+          <div class="item-hero-right">
+            <div class="item-title-section">
+              <h1 id="item-name">Item Name</h1>
+              <p class="item-description" id="item-description">Description goes here</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Category</div>
+                <div class="stat-value" id="stat-category">Shirt</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Creator</div>
+                <div class="stat-value" id="stat-creator">Tublox</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Total Sold</div>
+                <div class="stat-value" id="stat-sold">0</div>
+              </div>
+              <div class="stat-card" id="stat-stock-card" style="display:none">
+                <div class="stat-label">Remaining</div>
+                <div class="stat-value" id="stat-stock">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Rarity</div>
+                <div class="stat-value" id="stat-rarity">Common</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Added</div>
+                <div class="stat-value" id="stat-date">-</div>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="item-tags" id="item-tags" style="display:none"></div>
+
+            <!-- Price Section -->
+            <div class="price-section">
+              <div class="price-main">
+                <img src="/img/urus.png" alt="Urus" class="price-icon-big">
+                <span class="price-amount" id="price-amount">0</span>
+              </div>
+              <div class="price-balance">
+                Your balance: <img src="/img/urus.png" alt="U" class="price-icon-sm"> <span id="user-balance">0</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+              <button class="btn btn-buy-big" id="btn-purchase" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+                Purchase Item
+              </button>
+              <button class="btn btn-owned-big" id="btn-owned" style="display:none" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                You Own This
+              </button>
+              <button class="btn btn-equip-big" id="btn-equip" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2 12 5 8 2 3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>
+                Equip
+              </button>
+              <button class="btn btn-unequip-big" id="btn-unequip" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Unequip
+              </button>
+            </div>
+
+            <!-- Status Message -->
+            <div id="action-status" class="action-status"></div>
+          </div>
+        </div>
+
+        <!-- Similar Items -->
+        <div class="similar-section" id="similar-section" style="display:none">
+          <h3>More in <span id="similar-cat-name">this category</span></h3>
+          <div class="similar-grid" id="similar-grid"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- PURCHASE MODAL (Captcha + Confirmation) -->
+  <div id="purchase-modal" class="modal-overlay" style="display:none">
+    <div class="modal-panel purchase-modal-panel">
+      <button class="modal-close" id="purchase-modal-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Step 1: Captcha -->
+      <div id="purchase-step-captcha" class="purchase-step">
+        <div class="purchase-header">
+          <div class="purchase-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          </div>
+          <h2>Confirm Purchase</h2>
+          <p class="purchase-subtitle">Complete verification to buy this item</p>
+        </div>
+
+        <!-- Item Summary in Modal -->
+        <div class="purchase-item-summary">
+          <canvas id="modal-item-canvas" width="80" height="80"></canvas>
+          <div class="purchase-item-info">
+            <span class="purchase-item-name" id="modal-item-name">Item</span>
+            <span class="purchase-item-rarity" id="modal-item-rarity">Common</span>
+          </div>
+          <div class="purchase-item-price">
+            <img src="/img/urus.png" alt="U" class="price-icon-sm">
+            <span id="modal-item-price">0</span>
+          </div>
+        </div>
+
+        <!-- Transaction Preview -->
+        <div class="transaction-preview">
+          <div class="transaction-row">
+            <span class="transaction-label">Current Balance</span>
+            <span class="transaction-value" id="tx-balance-before">0</span>
+          </div>
+          <div class="transaction-row transaction-cost">
+            <span class="transaction-label">Item Cost</span>
+            <span class="transaction-value tx-negative" id="tx-cost">-0</span>
+          </div>
+          <div class="transaction-divider"></div>
+          <div class="transaction-row transaction-after">
+            <span class="transaction-label">After Purchase</span>
+            <span class="transaction-value" id="tx-balance-after">0</span>
+          </div>
+        </div>
+
+        <!-- Captcha -->
+        <div class="captcha-area">
+          <div id="purchase-hcaptcha"></div>
+        </div>
+
+        <div id="purchase-error" class="purchase-error"></div>
+
+        <button class="btn btn-confirm-purchase" id="btn-confirm-purchase">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm &amp; Buy
+        </button>
+
+        <p class="purchase-note">Your balance will be deducted immediately</p>
+      </div>
+
+      <!-- Step 2: Processing -->
+      <div id="purchase-step-processing" class="purchase-step" style="display:none">
+        <div class="processing-content">
+          <div class="spinner-big"></div>
+          <h3>Processing Purchase...</h3>
+          <p>Please wait</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div id="purchase-step-success" class="purchase-step" style="display:none">
+        <div class="success-content">
+          <div class="success-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="16 8 10 16 7 13"/></svg>
+          </div>
+          <h2>Purchase Complete!</h2>
+          <p class="success-item-name" id="success-item-name">Item Name</p>
+
+          <div class="success-receipt">
+            <div class="receipt-row">
+              <span>Item</span>
+              <span id="receipt-item">-</span>
+            </div>
+            <div class="receipt-row">
+              <span>Cost</span>
+              <span class="receipt-cost" id="receipt-cost">-0</span>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-row receipt-balance">
+              <span>Remaining Balance</span>
+              <span id="receipt-balance">0</span>
+            </div>
+          </div>
+
+          <div class="success-actions">
+            <button class="btn btn-equip-now" id="btn-equip-now">Equip Now</button>
+            <button class="btn btn-close-success" id="btn-close-success">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step Error -->
+      <div id="purchase-step-error" class="purchase-step" style="display:none">
+        <div class="error-content">
+          <div class="error-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <h2>Purchase Failed</h2>
+          <p id="error-message">Something went wrong</p>
+          <button class="btn btn-try-again" id="btn-try-again">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/character.js"></script>
+  <script src="/js/market-item.js"></script>
+</body>
+</html>

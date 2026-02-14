@@ -20,7 +20,10 @@
       document.getElementById('welcome-urus').textContent = userData.urus;
       document.getElementById('welcome-strikes').textContent = userData.dailyStrikes;
 
-      TC.drawSidebar(document.getElementById('sidebar-avatar'), userData.avatar);
+      // Sidebar avatar — with equipped cosmetics
+      startSidebarAvatar();
+
+      // Welcome avatar — animated with equipped
       startWelcomeAvatar();
 
       if (userData.dailyReward && userData.dailyReward.rewarded) {
@@ -32,6 +35,64 @@
       window.location.href = '/auth';
       return null;
     }
+  }
+
+  // ==================== WELCOME AVATAR ====================
+function startSidebarAvatar() {
+  const canvas = document.getElementById('sidebar-avatar');
+  if (!canvas) return;
+  const c = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  function frame(ts) {
+    const time = ts / 1000;
+    c.clearRect(0, 0, W, H);
+    c.fillStyle = '#111';
+    c.fillRect(0, 0, W, H);
+
+    // Draw small character centered in 40x40
+    TC.draw(c, W/2 - 8, 2, 16, 28, 1, 'idle', Math.floor(time / 0.5) % 2,
+      userData.avatar, null, false, time, {
+        equipped: userData.equipped || {}
+      });
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+  function startWelcomeAvatar() {
+    const canvas = document.getElementById('welcome-avatar');
+    if (!canvas) return;
+    const c = canvas.getContext('2d');
+
+    function frame(ts) {
+      const time = ts / 1000;
+      c.clearRect(0, 0, 120, 160);
+
+      // Background grid
+      c.fillStyle = '#080808';
+      c.fillRect(0, 0, 120, 160);
+      c.strokeStyle = '#0f0f0f';
+      c.lineWidth = 0.5;
+      for (let x = 0; x < 120; x += 15) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 160); c.stroke(); }
+      for (let y = 0; y < 160; y += 15) { c.beginPath(); c.moveTo(0, y); c.lineTo(120, y); c.stroke(); }
+
+      // Floor
+      c.fillStyle = '#1a1a1a';
+      c.fillRect(0, 130, 120, 30);
+      c.fillStyle = 'rgba(255,255,255,0.03)';
+      c.fillRect(0, 130, 120, 2);
+
+      // Draw character with equipped items
+      TC.draw(c, 35, 45, 45, 80, 1, 'idle', Math.floor(time / 0.5) % 2,
+        userData.avatar, null, true, time, {
+          equipped: userData.equipped || {}
+        });
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   }
 
   // ==================== LOAD GAMES ====================
@@ -125,11 +186,9 @@
         </div>
       `;
 
-
       card.addEventListener('click', () => {
-  window.location.href = `/games/${game.slug}`;
-});
-      
+        window.location.href = `/games/${game.slug}`;
+      });
     }
 
     return card;
@@ -268,20 +327,6 @@
 
     document.getElementById('btn-claim').addEventListener('click', () => { el.style.display = 'none'; });
     el.querySelector('.daily-reward-overlay')?.addEventListener('click', () => { el.style.display = 'none'; });
-  }
-
-  // ==================== WELCOME AVATAR ====================
-
-  function startWelcomeAvatar() {
-    const canvas = document.getElementById('welcome-avatar');
-    if (!canvas) return;
-    const c = canvas.getContext('2d');
-    function frame(ts) {
-      c.clearRect(0, 0, 120, 160);
-      TC.draw(c, 35, 20, 40, 60, 1, 'idle', Math.floor(ts / 500) % 2, userData.avatar, null, true, ts / 1000, {});
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
   }
 
   // ==================== UTILS ====================

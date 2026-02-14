@@ -259,6 +259,7 @@ app.get('/studio', (req, res) => res.sendFile(path.join(__dirname, 'public/pages
 app.get('/studio/edit', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio-editor.html')));
 app.get('/games/:slug', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/game-details.html')));
 app.get('/market', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/market.html')));
+app.get('/market/:itemId', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/market-item.html')));
 
 // ==================== AUTH API ====================
 
