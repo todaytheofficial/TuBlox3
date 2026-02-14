@@ -17,50 +17,24 @@
         </a>
       </div>
       <nav class="sidebar-nav">
-        <a href="/home" class="nav-item">
-          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Home</span>
-        </a>
-        <a href="/studio" class="nav-item">
-          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          <span>Studio</span>
-        </a>
-        <a href="/profile" class="nav-item">
-          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
-          <span>Profile</span>
-        </a>
-        <a href="/avatar" class="nav-item active">
-          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg>
-          <span>Avatar</span>
-        </a>
+        <a href="/home" class="nav-item"><svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></a>
+        <a href="/studio" class="nav-item"><svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>Studio</span></a>
+        <a href="/profile" class="nav-item"><svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg><span>Profile</span></a>
+        <a href="/avatar" class="nav-item active"><svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg><span>Avatar</span></a>
+        <a href="/market" class="nav-item"><svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span>Market</span></a>
       </nav>
       <div class="sidebar-currency">
-        <div class="currency-item">
-          <img src="/img/urus.png" alt="Urus" class="currency-icon">
-          <span class="currency-amount" id="sidebar-urus">0</span>
-        </div>
-        <div class="currency-item">
-          <img src="/img/daily.png" alt="Strikes" class="currency-icon">
-          <span class="currency-amount" id="sidebar-strikes">0</span>
-        </div>
+        <div class="currency-item"><img src="/img/urus.png" alt="Urus" class="currency-icon"><span class="currency-amount" id="sidebar-urus">0</span></div>
+        <div class="currency-item"><img src="/img/daily.png" alt="Strikes" class="currency-icon"><span class="currency-amount" id="sidebar-strikes">0</span></div>
       </div>
       <div class="sidebar-bottom">
-        <div class="user-card">
-          <canvas id="sidebar-avatar" width="40" height="40"></canvas>
-          <div class="user-info">
-            <span class="user-name" id="sidebar-username">...</span>
-            <span class="user-status">Online</span>
-          </div>
-        </div>
+        <div class="user-card"><canvas id="sidebar-avatar" width="40" height="40"></canvas><div class="user-info"><span class="user-name" id="sidebar-username">...</span><span class="user-status">Online</span></div></div>
         <button id="btn-logout" class="btn-logout">Logout</button>
       </div>
     </aside>
 
     <main id="main">
-      <h1 class="page-title">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="vertical-align:middle;margin-right:8px"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg>
-        Avatar Editor
-      </h1>
+      <h1 class="page-title">Avatar Editor</h1>
       <div class="avatar-editor">
         <div class="editor-preview">
           <canvas id="avatar-preview" width="240" height="320"></canvas>
@@ -68,24 +42,15 @@
         <div class="editor-controls">
           <div class="color-group">
             <label>Head Color</label>
-            <div class="color-row">
-              <input type="color" id="color-head" value="#FFFFFF">
-              <span class="color-hex" id="hex-head">#FFFFFF</span>
-            </div>
+            <div class="color-row"><input type="color" id="color-head" value="#FFFFFF"><span class="color-hex" id="hex-head">#FFFFFF</span></div>
           </div>
           <div class="color-group">
             <label>Body Color</label>
-            <div class="color-row">
-              <input type="color" id="color-body" value="#FFFFFF">
-              <span class="color-hex" id="hex-body">#FFFFFF</span>
-            </div>
+            <div class="color-row"><input type="color" id="color-body" value="#FFFFFF"><span class="color-hex" id="hex-body">#FFFFFF</span></div>
           </div>
           <div class="color-group">
             <label>Eye Color</label>
-            <div class="color-row">
-              <input type="color" id="color-eyes" value="#000000">
-              <span class="color-hex" id="hex-eyes">#000000</span>
-            </div>
+            <div class="color-row"><input type="color" id="color-eyes" value="#000000"><span class="color-hex" id="hex-eyes">#000000</span></div>
           </div>
           <div class="preset-section">
             <label>Quick Colors</label>
@@ -102,14 +67,23 @@
               <button class="preset" style="background:#8844FF" data-color="#8844FF"></button>
             </div>
           </div>
+
+          <!-- Equipped Items Display -->
+          <div class="equipped-section" id="equipped-section" style="display:none">
+            <label>Equipped Items</label>
+            <div class="equipped-list" id="equipped-list"></div>
+          </div>
+
           <div class="editor-buttons">
             <button class="btn btn-white btn-full" id="btn-save-avatar">Save Avatar</button>
-            <button class="btn btn-outline btn-full" id="btn-reset-avatar">Reset</button>
+            <button class="btn btn-outline btn-full" id="btn-reset-avatar">Reset Colors</button>
           </div>
           <div id="avatar-save-msg" class="save-msg"></div>
           <div class="marketplace-teaser">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" style="vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            <span>Marketplace coming soon — spend your <img src="/img/urus.png" alt="U" style="width:14px;height:14px;vertical-align:middle"> Urus on accessories!</span>
+            <a href="/market" style="color:#888;text-decoration:none;display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              <span>Visit the <strong style="color:#fff">Market</strong> to buy shirts, hats, hair & more!</span>
+            </a>
           </div>
         </div>
       </div>
