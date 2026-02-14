@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox - Game</title>
+  <link rel="stylesheet" href="/css/game.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <div id="loading-screen">
+      <div class="loader-content">
+        <img src="/img/logo.png" alt="Tublox" class="loader-logo">
+        <div class="logo">TUBLOX</div>
+        <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+        <p id="loader-text">Connecting...</p>
+      </div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <div id="hud">
+      <div class="hud-top-left"><span id="hud-place" class="hud-place"></span><span id="hud-players" class="hud-players">0</span></div>
+      <div class="hud-top-right"><span id="hud-fps" class="hud-fps">60 FPS</span></div>
+    </div>
+    <div id="chat-container"><div id="chat-messages"></div><div id="chat-input-container" style="display:none"><input type="text" id="chat-input" placeholder="Type..." maxlength="200"></div></div>
+    <div id="esc-menu" style="display:none">
+      <div class="esc-menu-overlay"></div>
+      <div class="esc-menu-panel">
+        <img src="/img/logo.png" alt="Tublox" class="menu-logo">
+        <h2>Menu</h2>
+        <div class="menu-section"><h3>Players <span id="menu-player-count"></span></h3><div id="menu-player-list" class="player-list"></div></div>
+        <div class="menu-buttons">
+          <button id="btn-resume" class="btn btn-white btn-full">Resume</button>
+          <button id="btn-reset" class="btn btn-outline-light btn-full">Reset Character</button>
+          <button id="btn-leave" class="btn btn-danger btn-full">Leave Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/character.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>

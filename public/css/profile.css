@@ -1,0 +1,322 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #000;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+a { text-decoration: none; color: inherit; }
+
+#app { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #0a0a0a;
+  border-right: 1px solid #151515;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 50;
+}
+
+.sidebar-top { padding: 20px; border-bottom: 1px solid #151515; }
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  object-fit: contain;
+}
+
+.logo { font-weight: 900; font-size: 20px; letter-spacing: 3px; }
+
+.sidebar-nav { flex: 1; padding: 12px 0; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  transition: all 0.15s;
+}
+
+.nav-item:hover { color: #aaa; background: rgba(255,255,255,0.02); }
+.nav-item.active { color: #fff; background: rgba(255,255,255,0.04); border-right: 2px solid #fff; }
+.nav-svg { flex-shrink: 0; }
+
+/* SIDEBAR CURRENCY */
+.sidebar-currency {
+  padding: 12px 16px;
+  border-top: 1px solid #151515;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.currency-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+}
+
+.currency-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.currency-amount {
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff;
+}
+
+/* SIDEBAR BOTTOM */
+.sidebar-bottom { padding: 16px; border-top: 1px solid #151515; }
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #111;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.user-card canvas { border-radius: 6px; }
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 13px; font-weight: 700; }
+.user-status { font-size: 11px; color: #4ade80; }
+
+.btn-logout {
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid #222;
+  border-radius: 6px;
+  color: #555;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+
+/* MAIN */
+#main {
+  flex: 1;
+  margin-left: 240px;
+  padding: 32px;
+}
+
+/* PROFILE HEADER */
+.profile-header {
+  display: flex;
+  gap: 32px;
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.profile-avatar-section { flex-shrink: 0; }
+
+.avatar-display {
+  background: #0d0d0d;
+  border-radius: 12px;
+  border: 1px solid #1a1a1a;
+  overflow: hidden;
+}
+
+.avatar-display canvas { display: block; }
+
+.profile-info-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.profile-info-section h1 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+/* PROFILE CURRENCIES */
+.profile-currencies {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.profile-currency {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.profile-currency-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.profile-currency-amount {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.profile-currency-label {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+}
+
+/* META */
+.profile-meta {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.meta-item { font-size: 13px; color: #555; font-weight: 600; }
+
+/* BIO */
+.profile-bio { margin-top: 4px; }
+.profile-bio p { color: #888; font-size: 14px; margin-bottom: 8px; line-height: 1.5; }
+
+#bio-editor { margin-top: 8px; }
+
+#bio-input {
+  width: 100%;
+  height: 80px;
+  padding: 12px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+#bio-input:focus { border-color: #444; }
+.bio-buttons { display: flex; gap: 8px; }
+
+/* SECTION */
+.section { margin-bottom: 32px; }
+
+.section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #151515;
+}
+
+/* STATS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-icon-row {
+  margin-bottom: 8px;
+}
+
+.stat-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* BUTTONS */
+.btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-white { background: #fff; color: #000; }
+.btn-white:hover { background: #ddd; }
+.btn-outline { background: transparent; color: #888; border: 1px solid #333; }
+.btn-outline:hover { border-color: #888; color: #fff; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-full { width: 100%; text-align: center; }
+
+@media (max-width: 768px) {
+  #sidebar { width: 64px; }
+  .sidebar-nav .nav-item span:not(.nav-svg):last-child { display: none; }
+  .sidebar-top .logo { display: none; }
+  .sidebar-logo-img { width: 32px; height: 32px; }
+  .user-card .user-info { display: none; }
+  .currency-amount { font-size: 12px; }
+  .currency-icon { width: 16px; height: 16px; }
+  #main { margin-left: 64px; padding: 20px; }
+  .profile-header { flex-direction: column; align-items: center; text-align: center; }
+  .profile-currencies { justify-content: center; }
+  .profile-meta { justify-content: center; }
+}

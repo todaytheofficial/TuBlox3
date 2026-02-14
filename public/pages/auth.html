@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox - Login</title>
+  <link rel="stylesheet" href="/css/auth.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <a href="/" class="back-link">← Back</a>
+    <div class="auth-container">
+      <div class="auth-header">
+        <img src="/img/logo.png" alt="Tublox" class="auth-logo">
+        <div class="logo">TUBLOX</div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Login</button>
+        <button class="tab" data-tab="register">Sign Up</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="input-group"><label>Username</label><input type="text" id="login-username" placeholder="Username" autocomplete="username" required></div>
+        <div class="input-group"><label>Password</label><input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required></div>
+        <div id="login-error" class="error"></div>
+        <button type="submit" class="btn btn-white btn-full">Login</button>
+      </form>
+      <form id="register-form" class="auth-form" style="display:none">
+        <div class="input-group"><label>Username</label><input type="text" id="reg-username" placeholder="3-20 characters" autocomplete="username" required></div>
+        <div class="input-group"><label>Password</label><input type="password" id="reg-password" placeholder="4+ characters" autocomplete="new-password" required></div>
+        <div class="input-group"><label>Confirm</label><input type="password" id="reg-password2" placeholder="Confirm password" autocomplete="new-password" required></div>
+        <div id="register-error" class="error"></div>
+        <button type="submit" class="btn btn-white btn-full">Create Account</button>
+      </form>
+    </div>
+    <canvas id="bg-canvas"></canvas>
+  </div>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

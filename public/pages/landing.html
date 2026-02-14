@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox</title>
+  <link rel="stylesheet" href="/css/landing.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <div class="nav-left">
+      <a href="/" class="logo-link">
+        <img src="/img/logo.png" alt="Tublox" class="logo-img">
+        <span class="logo-text">TUBLOX</span>
+      </a>
+      <span class="ver">3</span>
+    </div>
+    <div class="nav-right">
+      <a href="/auth" class="btn btn-outline" id="btn-login">Login</a>
+      <a href="/auth#register" class="btn btn-white" id="btn-signup">Sign Up</a>
+      <a href="/home" class="btn btn-white" id="btn-enter" style="display:none;">Enter</a>
+    </div>
+  </nav>
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-logo">
+        <img src="/img/logo.png" alt="Tublox" class="hero-logo-img">
+        <h1>TUBLOX <span>3</span></h1>
+      </div>
+      <p class="sub">2D Multiplayer TuGames</p>
+      <p class="desc">Play with friends in real-time. Jump, run, fight, and explore TuGames together.</p>
+      <a href="/home" class="btn btn-white btn-lg">Play Now →</a>
+    </div>
+    <div class="hero-preview"><canvas id="hero-canvas" width="480" height="320"></canvas></div>
+  </section>
+  <section class="features">
+    <div class="feature">
+      <div class="feature-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+      <h3>Real-time Multiplayer</h3><p>Play with up to 20 players</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M14 10h2M14 14h2"/></svg></div>
+      <h3>Multiple TuGames</h3><p>Platformer, PVP, and more</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg></div>
+      <h3>Custom Avatar</h3><p>Customize your character</p>
+    </div>
+  </section>
+  <footer>
+    <img src="/img/logo.png" alt="Tublox" class="footer-logo">
+    <p>Tublox 3 © 2026</p>
+  </footer>
+  <script src="/js/character.js"></script>
+  <script src="/js/landing.js"></script>
+</body>
+</html>
