@@ -31,13 +31,19 @@ window.TubloxCharacter = (function() {
     const cx = x + w / 2;
     const bottom = y + h;
 
+    // Walk cycle phase - smooth continuous animation
+    let walkPhase = 0;
     let bobY = 0;
-    if (state === 'run') bobY = Math.sin(frame * Math.PI / 2) * 2;
-    else if (state === 'idle') bobY = Math.sin(time * 2) * 1;
+    if (state === 'run') {
+      walkPhase = time * 8; // smooth continuous walk cycle based on time
+      bobY = Math.abs(Math.sin(walkPhase)) * 2; // bounce up at each step
+    } else if (state === 'idle') {
+      bobY = Math.sin(time * 2) * 1;
+    }
 
     if (isDead) {
       c.save(); c.globalAlpha = 0.5; c.translate(cx, bottom); c.rotate(90 * Math.PI / 180);
-      drawBody(c, 0, 0, headW, headH, torsoW, torsoH, legW, legH, armW, armH, h, bc, hc, ec, 'idle', 0, 0, time, false, 0, null, true, itemOn, equipped);
+      drawBody(c, 0, 0, headW, headH, torsoW, torsoH, legW, legH, armW, armH, h, bc, hc, ec, 'idle', 0, 0, time, 0, false, 0, null, true, itemOn, equipped);
       c.restore(); return;
     }
 
@@ -64,7 +70,7 @@ window.TubloxCharacter = (function() {
     }
 
     c.save(); c.translate(cx, bottom); c.scale(dir, 1);
-    drawBody(c, 0, 0, headW, headH, torsoW, torsoH, legW, legH, armW, armH, h, bc, hc, ec, state, frame, bobY, time, attacking, attackProgress, activeItem, false, itemOn, equipped);
+    drawBody(c, 0, 0, headW, headH, torsoW, torsoH, legW, legH, armW, armH, h, bc, hc, ec, state, frame, bobY, time, walkPhase, attacking, attackProgress, activeItem, false, itemOn, equipped);
     c.restore();
 
     if (typeof hp === 'number' && typeof maxHp === 'number' && hp < maxHp) {
@@ -84,46 +90,82 @@ window.TubloxCharacter = (function() {
     }
   }
 
-  function drawBody(c, ox, oy, headW, headH, torsoW, torsoH, legW, legH, armW, armH, totalH, bc, hc, ec, state, frame, bobY, time, attacking, attackProgress, activeItem, isDead, itemOn, equipped) {
+  function drawBody(c, ox, oy, headW, headH, torsoW, torsoH, legW, legH, armW, armH, totalH, bc, hc, ec, state, frame, bobY, time, walkPhase, attacking, attackProgress, activeItem, isDead, itemOn, equipped) {
     equipped = equipped || {};
     const legTop = -legH;
     const torsoTop = legTop - torsoH;
     const headTop = torsoTop - headH;
+
+    // === WALK ANIMATION ANGLES ===
+    let leftLegAngle = 0, rightLegAngle = 0;
+    let backArmAngle = 0, frontArmAngle = 0;
+
+    if (state === 'run') {
+      // Smooth sinusoidal walk cycle
+      const legSwing = 30; // max leg swing angle in degrees
+      const armSwing = 25;
+
+      leftLegAngle = Math.sin(walkPhase) * legSwing;
+      rightLegAngle = Math.sin(walkPhase + Math.PI) * legSwing; // opposite phase
+
+      backArmAngle = Math.sin(walkPhase + Math.PI) * armSwing; // arms opposite to legs
+      frontArmAngle = Math.sin(walkPhase) * armSwing;
+    } else if (state === 'jump') {
+      leftLegAngle = -15;
+      rightLegAngle = 15;
+      backArmAngle = -35;
+      frontArmAngle = 35;
+    } else if (state === 'fall') {
+      leftLegAngle = -10;
+      rightLegAngle = 10;
+      backArmAngle = -20;
+      frontArmAngle = 20;
+    } else {
+      // Idle - subtle breathing sway
+      backArmAngle = Math.sin(time * 1.5) * 3;
+      frontArmAngle = -Math.sin(time * 1.5) * 3;
+    }
 
     // === LEGS ===
     const pantsEquip = equipped.pants;
     const pantsCol = pantsEquip ? (pantsEquip.color || shade(bc, -40)) : shade(bc, -40);
     const pantsType = pantsEquip?.drawData?.type;
 
-    if (state === 'run') {
-      const ls = Math.sin(frame * Math.PI / 2) * 25;
-      c.save(); c.translate(-legW/2 - 1, legTop - bobY); c.rotate(ls * Math.PI / 180);
-      c.fillStyle = pantsCol; c.fillRect(0, 0, legW, legH);
-      drawLegDetail(c, legW, legH, pantsType, pantsCol, 0, 0);
-      c.restore();
-      c.save(); c.translate(legW/2 + 1, legTop - bobY); c.rotate(-ls * Math.PI / 180);
-      c.fillStyle = pantsCol; c.fillRect(0, 0, legW, legH);
-      drawLegDetail(c, legW, legH, pantsType, pantsCol, 0, 0);
-      c.restore();
-    } else if (state === 'jump' || state === 'fall') {
-      c.fillStyle = pantsCol;
-      c.fillRect(-legW - 1, legTop - bobY, legW, legH - 3);
-      drawLegDetail(c, legW, legH - 3, pantsType, pantsCol, -legW - 1, legTop - bobY);
-      c.fillRect(1, legTop - bobY, legW, legH - 3);
-      drawLegDetail(c, legW, legH - 3, pantsType, pantsCol, 1, legTop - bobY);
-    } else {
-      c.fillStyle = pantsCol;
-      c.fillRect(-legW - 1, legTop - bobY, legW, legH);
-      drawLegDetail(c, legW, legH, pantsType, pantsCol, -legW - 1, legTop - bobY);
-      c.fillRect(1, legTop - bobY, legW, legH);
-      drawLegDetail(c, legW, legH, pantsType, pantsCol, 1, legTop - bobY);
+    // Left leg
+    c.save();
+    c.translate(-legW/2 - 1, legTop - bobY);
+    if (state === 'run' || state === 'jump' || state === 'fall') {
+      c.rotate(leftLegAngle * Math.PI / 180);
     }
+    c.fillStyle = pantsCol;
+    c.fillRect(0, 0, legW, legH);
+    drawLegDetail(c, legW, legH, pantsType, pantsCol, 0, 0);
+    // Shoe
+    c.fillStyle = shade(pantsCol, -25);
+    c.fillRect(-1, legH - 3, legW + 2, 3);
+    c.restore();
+
+    // Right leg
+    c.save();
+    c.translate(legW/2 + 1, legTop - bobY);
+    if (state === 'run' || state === 'jump' || state === 'fall') {
+      c.rotate(rightLegAngle * Math.PI / 180);
+    }
+    c.fillStyle = pantsCol;
+    c.fillRect(0, 0, legW, legH);
+    drawLegDetail(c, legW, legH, pantsType, pantsCol, 0, 0);
+    // Shoe
+    c.fillStyle = shade(pantsCol, -25);
+    c.fillRect(-1, legH - 3, legW + 2, 3);
+    c.restore();
 
     // === BACK ARM ===
     const armAttachY = torsoTop + 2 - bobY;
-    const bArmAngle = state === 'run' ? Math.sin(frame*Math.PI/2)*25 : state === 'jump' ? -35 : Math.sin(time*1.5)*3;
-    c.save(); c.translate(-torsoW/2-1, armAttachY); c.rotate(bArmAngle*Math.PI/180);
-    drawArm(c, armW, armH, bc, equipped); c.restore();
+    c.save();
+    c.translate(-torsoW/2 - 1, armAttachY);
+    c.rotate(backArmAngle * Math.PI / 180);
+    drawArm(c, armW, armH, bc, equipped);
+    c.restore();
 
     // === TORSO ===
     const shirtEquip = equipped.shirt;
@@ -164,7 +206,6 @@ window.TubloxCharacter = (function() {
     } else {
       drawDefaultFace(c, headW, headH, headTop, bobY, ec, time, isDead);
     }
-
     c.restore();
 
     if (equipped.hat) drawHatCosmetic(c, headW, headH, headTop, bobY, equipped.hat, time);
@@ -191,7 +232,7 @@ window.TubloxCharacter = (function() {
     }
 
     // === FRONT ARM + HELD ITEM ===
-    const frontArmX = torsoW/2+1;
+    const frontArmX = torsoW/2 + 1;
     if (activeItem === 'sword') {
       if (attacking) {
         let angle;
@@ -218,13 +259,16 @@ window.TubloxCharacter = (function() {
       c.fillStyle = shade(bc,-10); c.fillRect(0,0,armW,armH);
       drawShieldHeld(c, armW/2, armH*0.4, armH*0.9, itemOn, time); c.restore();
     } else {
-      const aAngle = state === 'run' ? -Math.sin(frame*Math.PI/2)*25 : state === 'jump' ? 35 : -Math.sin(time*1.5)*3;
-      c.save(); c.translate(frontArmX, armAttachY); c.rotate(aAngle*Math.PI/180);
-      drawArm(c, armW, armH, bc, equipped); c.restore();
+      // Normal front arm with walk animation
+      c.save();
+      c.translate(frontArmX, armAttachY);
+      c.rotate(frontArmAngle * Math.PI / 180);
+      drawArm(c, armW, armH, bc, equipped);
+      c.restore();
     }
   }
 
-  // ==================== DEFAULT FACE (no cosmetic) ====================
+  // ==================== DEFAULT FACE ====================
 
   function drawDefaultFace(c, headW, headH, headTop, bobY, ec, time, isDead) {
     const blink = Math.sin(time*2.5) > 0.93;
@@ -270,6 +314,9 @@ window.TubloxCharacter = (function() {
       c.fillStyle = equipped.shirt.color || bc;
     }
     c.fillRect(0, 0, w, h);
+    // Hand
+    c.fillStyle = shade(bc, 5);
+    c.fillRect(0, h - 3, w, 3);
   }
 
   function drawTorso(c, tw, th, torsoTop, bobY, shirtType, shirtCol, bc) {
@@ -290,39 +337,26 @@ window.TubloxCharacter = (function() {
     }
   }
 
-  // ==================== FACE COSMETIC WITH UNIQUE ANIMATIONS ====================
+  // ==================== FACE COSMETIC WITH ANIMATIONS ====================
 
   function drawFaceCosmetic(c, headW, headH, headTop, bobY, type, ec, time, isDead) {
-    // All face coordinates are relative to head bounds
-    const headCenterX = 0;
-    const headCenterY = headTop + headH * 0.5 - bobY;
-    const eyeY = headTop + headH * 0.35 - bobY;
+    const eyeY = headTop + headH*0.35 - bobY;
     const maxEyeSize = Math.max(2, Math.round(Math.min(headW * 0.11, headH * 0.15)));
     const eyeSize = maxEyeSize;
-    const gap = Math.round(headW * 0.10);
-    const mouthY = headTop + headH * 0.65 - bobY;
-
-    // Constrain limits
-    const leftBound = -headW/2 + 2;
-    const rightBound = headW/2 - 2;
-    const topBound = headTop - bobY + 2;
-    const bottomBound = headTop + headH - bobY - 2;
+    const gap = Math.round(headW*0.10);
+    const mouthY = headTop + headH*0.65 - bobY;
+    const blink = Math.sin(time*2.5) > 0.93;
 
     switch(type) {
       case 'smile': {
-        // ANIMATION: Eyes squint happily periodically, mouth widens
-        const blink = Math.sin(time * 2.5) > 0.93;
-        const happyPulse = Math.sin(time * 3) * 0.3 + 0.7; // 0.4 to 1.0
+        const happyPulse = Math.sin(time * 3) * 0.3 + 0.7;
         const mouthWidth = headW * 0.15 + happyPulse * headW * 0.05;
-
         if (!blink) {
-          // Happy squinted eyes animation
           const squint = Math.sin(time * 1.8);
           const eyeH = squint > 0.7 ? eyeSize * 0.4 : eyeSize;
           c.fillStyle = '#000';
           c.beginPath(); c.arc(-gap, eyeY, eyeH * 0.8, 0, Math.PI * 2); c.fill();
           c.beginPath(); c.arc(gap, eyeY, eyeH * 0.8, 0, Math.PI * 2); c.fill();
-          // Highlight
           c.fillStyle = 'rgba(255,255,255,0.3)';
           c.beginPath(); c.arc(-gap - 1, eyeY - 1, eyeH * 0.3, 0, Math.PI * 2); c.fill();
           c.beginPath(); c.arc(gap - 1, eyeY - 1, eyeH * 0.3, 0, Math.PI * 2); c.fill();
@@ -331,70 +365,43 @@ window.TubloxCharacter = (function() {
           c.fillRect(-gap - eyeSize, eyeY, eyeSize * 2, 2);
           c.fillRect(gap - eyeSize, eyeY, eyeSize * 2, 2);
         }
-        // Animated smile mouth
         c.strokeStyle = '#000'; c.lineWidth = 1.5;
         c.beginPath(); c.arc(0, mouthY - 4, mouthWidth, 0.15, Math.PI - 0.15); c.stroke();
-        // Cheek blush
         c.fillStyle = 'rgba(255, 150, 150, 0.15)';
         c.beginPath(); c.arc(-gap - 2, mouthY - 5, 3, 0, Math.PI * 2); c.fill();
         c.beginPath(); c.arc(gap + 2, mouthY - 5, 3, 0, Math.PI * 2); c.fill();
         break;
       }
-
       case 'cool': {
-        // ANIMATION: Sunglasses shimmer, slight head tilt feeling via offset, mouth smirk
         const shimmer = Math.sin(time * 4) * 0.15;
         const glassY = eyeY - 2;
         const glassH = eyeSize + 3;
         const glassW = headW * 0.35;
-
-        // Sunglasses frame
         c.fillStyle = '#111';
-        c.fillRect(Math.max(leftBound, -glassW), glassY, Math.min(glassW * 2, rightBound - leftBound), glassH);
-
-        // Left lens
+        c.fillRect(-glassW, glassY, glassW * 2, glassH);
         c.fillStyle = `rgba(50,50,80,${0.85 + shimmer})`;
-        c.fillRect(Math.max(leftBound + 2, -glassW + 3), glassY + 2, glassW * 0.45, glassH - 4);
-        // Right lens
-        c.fillRect(Math.min(rightBound - glassW * 0.45 - 2, glassW * 0.1), glassY + 2, glassW * 0.45, glassH - 4);
-
-        // Shimmer highlight
+        c.fillRect(-glassW + 3, glassY + 2, glassW * 0.45, glassH - 4);
+        c.fillRect(glassW * 0.1, glassY + 2, glassW * 0.45, glassH - 4);
         c.fillStyle = `rgba(255,255,255,${0.1 + shimmer * 0.5})`;
         const shimX = (Math.sin(time * 2) * 0.5 + 0.5) * glassW * 0.3;
         c.fillRect(-glassW + 4 + shimX, glassY + 2, 3, glassH - 4);
-
-        // Bridge
-        c.fillStyle = '#222';
-        c.fillRect(-2, glassY + 1, 4, glassH - 2);
-
-        // Smirk mouth - slight animation
+        c.fillStyle = '#222'; c.fillRect(-2, glassY + 1, 4, glassH - 2);
         const smirkOff = Math.sin(time * 1.2) * 1;
         c.strokeStyle = '#000'; c.lineWidth = 1;
-        c.beginPath();
-        c.moveTo(-headW * 0.1, mouthY + smirkOff);
-        c.quadraticCurveTo(headW * 0.05, mouthY + 3 + smirkOff, headW * 0.12, mouthY - 1 + smirkOff);
-        c.stroke();
+        c.beginPath(); c.moveTo(-headW * 0.1, mouthY + smirkOff); c.quadraticCurveTo(headW * 0.05, mouthY + 3 + smirkOff, headW * 0.12, mouthY - 1 + smirkOff); c.stroke();
         break;
       }
-
       case 'angry': {
-        // ANIMATION: Eyebrows twitch, eyes pulse slightly red, mouth snarls
-        const blink = Math.sin(time * 2.5) > 0.93;
-        const rage = Math.sin(time * 6) * 0.5; // fast twitch
+        const rage = Math.sin(time * 6) * 0.5;
         const browAngle = 4 + rage;
-
         if (!blink) {
-          // Red tinted angry eyes
           const eyePulse = Math.sin(time * 5) * 0.15;
           c.fillStyle = `rgba(${180 + Math.floor(eyePulse * 75)}, 0, 0, 0.15)`;
           c.beginPath(); c.arc(-gap, eyeY + 1, eyeSize + 2, 0, Math.PI * 2); c.fill();
           c.beginPath(); c.arc(gap, eyeY + 1, eyeSize + 2, 0, Math.PI * 2); c.fill();
-
           c.fillStyle = '#000';
           c.beginPath(); c.arc(-gap, eyeY + 1, eyeSize * 0.8, 0, Math.PI * 2); c.fill();
           c.beginPath(); c.arc(gap, eyeY + 1, eyeSize * 0.8, 0, Math.PI * 2); c.fill();
-
-          // Animated angry pupils (smaller, intense)
           c.fillStyle = '#600';
           c.beginPath(); c.arc(-gap, eyeY + 1, eyeSize * 0.3, 0, Math.PI * 2); c.fill();
           c.beginPath(); c.arc(gap, eyeY + 1, eyeSize * 0.3, 0, Math.PI * 2); c.fill();
@@ -403,60 +410,36 @@ window.TubloxCharacter = (function() {
           c.fillRect(-gap - eyeSize, eyeY + 1, eyeSize * 2, 2);
           c.fillRect(gap - eyeSize, eyeY + 1, eyeSize * 2, 2);
         }
-
-        // Animated angry eyebrows
         c.strokeStyle = '#000'; c.lineWidth = 2;
         c.beginPath(); c.moveTo(-gap - eyeSize, eyeY - browAngle - 2); c.lineTo(-gap + eyeSize, eyeY - 1); c.stroke();
         c.beginPath(); c.moveTo(gap + eyeSize, eyeY - browAngle - 2); c.lineTo(gap - eyeSize, eyeY - 1); c.stroke();
-
-        // Snarling mouth
         const snarl = Math.sin(time * 4) * 1.5;
         c.strokeStyle = '#000'; c.lineWidth = 1.5;
         c.beginPath(); c.arc(0, mouthY + 3 + snarl, headW * 0.1, Math.PI + 0.3, -0.3); c.stroke();
-
-        // Teeth
         c.fillStyle = '#fff';
         c.fillRect(-3, mouthY + 1 + snarl, 2, 2);
         c.fillRect(1, mouthY + 1 + snarl, 2, 2);
         break;
       }
-
       case 'wink': {
-        // ANIMATION: Winking eye alternates, sparkle near winking eye
-        const blink = Math.sin(time * 2.5) > 0.93;
-        const winkCycle = Math.floor(time * 0.5) % 2 === 0; // alternates which eye winks
         const sparkle = Math.sin(time * 8) > 0.5;
-
         if (!blink) {
-          // Open eye
           c.fillStyle = '#000';
           c.beginPath(); c.arc(-gap, eyeY, eyeSize * 0.85, 0, Math.PI * 2); c.fill();
-          // Highlight
           c.fillStyle = 'rgba(255,255,255,0.4)';
           c.beginPath(); c.arc(-gap - 1, eyeY - 1, eyeSize * 0.3, 0, Math.PI * 2); c.fill();
         }
-
-        // Winking eye (always winking line)
         c.strokeStyle = '#000'; c.lineWidth = 1.5;
         c.beginPath(); c.moveTo(gap - eyeSize, eyeY); c.lineTo(gap + eyeSize, eyeY); c.stroke();
-
-        // Sparkle animation near wink
         if (sparkle) {
           c.strokeStyle = '#FFD700'; c.lineWidth = 1;
-          const sx = gap + eyeSize + 3;
-          const sy = eyeY - 3;
+          const sx = gap + eyeSize + 3, sy = eyeY - 3;
           c.beginPath(); c.moveTo(sx, sy - 3); c.lineTo(sx, sy + 3); c.stroke();
           c.beginPath(); c.moveTo(sx - 3, sy); c.lineTo(sx + 3, sy); c.stroke();
-          c.beginPath(); c.moveTo(sx - 2, sy - 2); c.lineTo(sx + 2, sy + 2); c.stroke();
-          c.beginPath(); c.moveTo(sx + 2, sy - 2); c.lineTo(sx - 2, sy + 2); c.stroke();
         }
-
-        // Playful smile
         const smileW = Math.sin(time * 2) * 1 + headW * 0.12;
         c.strokeStyle = '#000'; c.lineWidth = 1.5;
         c.beginPath(); c.arc(0, mouthY - 3, smileW, 0.1, Math.PI - 0.1); c.stroke();
-
-        // Tongue poke animation
         const tongue = Math.sin(time * 1.5);
         if (tongue > 0.3) {
           c.fillStyle = '#FF6B6B';
@@ -464,33 +447,18 @@ window.TubloxCharacter = (function() {
         }
         break;
       }
-
       case 'robot': {
-        // ANIMATION: Scanning eyes, digital mouth flickers, HUD elements
         const scanX = Math.sin(time * 3) * (gap * 0.4);
         const flicker = Math.sin(time * 12) > 0 ? 1 : 0.7;
         const scanLine = (time * 50) % headH;
-
-        // Scan line effect
-        c.fillStyle = `rgba(0, 255, 0, 0.03)`;
+        c.fillStyle = 'rgba(0, 255, 0, 0.03)';
         c.fillRect(-headW/2 + 2, headTop - bobY + scanLine, headW - 4, 2);
-
-        // Digital eyes with scanning pupil
         c.fillStyle = `rgba(0, 255, 0, ${0.3 * flicker})`;
         c.fillRect(-gap - 3, eyeY - 2, 6, 6);
         c.fillRect(gap - 3, eyeY - 2, 6, 6);
-
         c.fillStyle = `rgba(0, 255, 0, ${flicker})`;
         c.fillRect(-gap - 1 + scanX * 0.3, eyeY, 2, 2);
         c.fillRect(gap - 1 + scanX * 0.3, eyeY, 2, 2);
-
-        // Outer glow
-        c.strokeStyle = `rgba(0, 255, 0, ${0.3 * flicker})`;
-        c.lineWidth = 0.5;
-        c.strokeRect(-gap - 4, eyeY - 3, 8, 8);
-        c.strokeRect(gap - 4, eyeY - 3, 8, 8);
-
-        // Digital mouth - animated segments
         const segments = 5;
         const segW = headW * 0.06;
         for (let i = 0; i < segments; i++) {
@@ -498,63 +466,29 @@ window.TubloxCharacter = (function() {
           c.fillStyle = `rgba(0, ${180 + Math.floor(Math.sin(time * 6 + i) * 75)}, 0, ${flicker})`;
           c.fillRect(-headW * 0.15 + i * segW, mouthY - 1, segW - 1, segH);
         }
-
-        // HUD bracket decorations
-        c.strokeStyle = `rgba(0, 255, 0, ${0.15 * flicker})`;
-        c.lineWidth = 0.5;
-        // top-left bracket
-        c.beginPath(); c.moveTo(leftBound + 3, topBound + 6); c.lineTo(leftBound + 3, topBound + 3); c.lineTo(leftBound + 6, topBound + 3); c.stroke();
-        // top-right bracket
-        c.beginPath(); c.moveTo(rightBound - 3, topBound + 6); c.lineTo(rightBound - 3, topBound + 3); c.lineTo(rightBound - 6, topBound + 3); c.stroke();
         break;
       }
-
       case 'skull': {
-        // ANIMATION: Eyes flicker/glow, jaw chatters, ghostly particles
         const flicker = Math.sin(time * 7) * 0.3 + 0.7;
-        const jawOpen = Math.sin(time * 2.5) * 1.5 + 1.5; // 0 to 3
-
-        // Eye sockets
+        const jawOpen = Math.sin(time * 2.5) * 1.5 + 1.5;
         c.fillStyle = '#000';
         c.beginPath(); c.arc(-gap, eyeY, eyeSize + 1, 0, Math.PI * 2); c.fill();
         c.beginPath(); c.arc(gap, eyeY, eyeSize + 1, 0, Math.PI * 2); c.fill();
-
-        // Glowing eye pupils
         c.fillStyle = `rgba(255, ${Math.floor(50 * flicker)}, ${Math.floor(50 * flicker)}, ${flicker})`;
         c.beginPath(); c.arc(-gap, eyeY, eyeSize * 0.5, 0, Math.PI * 2); c.fill();
         c.beginPath(); c.arc(gap, eyeY, eyeSize * 0.5, 0, Math.PI * 2); c.fill();
-
-        // Eye glow
-        c.fillStyle = `rgba(255, 0, 0, ${0.1 * flicker})`;
-        c.beginPath(); c.arc(-gap, eyeY, eyeSize + 3, 0, Math.PI * 2); c.fill();
-        c.beginPath(); c.arc(gap, eyeY, eyeSize + 3, 0, Math.PI * 2); c.fill();
-
-        // Nose hole
         c.fillStyle = '#000';
         c.beginPath(); c.moveTo(-1, mouthY - 6); c.lineTo(1, mouthY - 6); c.lineTo(0, mouthY - 3); c.fill();
-
-        // Chattering teeth
         const teethY = mouthY + jawOpen;
         c.fillStyle = '#888';
-        const teethCount = 4;
         const teethWidth = headW * 0.06;
-        for (let i = 0; i < teethCount; i++) {
+        for (let i = 0; i < 4; i++) {
           const tx = -headW * 0.12 + i * teethWidth * 1.1;
           c.fillRect(tx, mouthY - 1, teethWidth - 1, 3);
           c.fillRect(tx, teethY, teethWidth - 1, 3);
         }
-
-        // Ghostly particles
-        for (let i = 0; i < 3; i++) {
-          const px = Math.sin(time * 2 + i * 2.1) * headW * 0.3;
-          const py = headTop - bobY + ((time * 15 + i * 30) % headH);
-          const pa = Math.max(0, 0.15 - (py - headTop + bobY) / headH * 0.2);
-          c.fillStyle = `rgba(200, 200, 255, ${pa})`;
-          c.beginPath(); c.arc(px, py, 1.5, 0, Math.PI * 2); c.fill();
-        }
         break;
       }
-
       default: {
         drawDefaultFace(c, headW, headH, headTop, bobY, ec, time, isDead);
         break;
@@ -628,12 +562,10 @@ window.TubloxCharacter = (function() {
     if (equipped?.hair) { const hairCol = equipped.hair.color || '#222'; c.fillStyle = hairCol; const ht = equipped.hair.drawData?.type; if (ht === 'spiky') { for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(15+i*5, 3); c.lineTo(18+i*5, -3); c.lineTo(21+i*5, 3); c.fill(); } } else if (ht === 'mohawk') { c.fillRect(17, -3, 6, 7); } else if (ht === 'long') { c.fillRect(8, 2, 5, 16); c.fillRect(27, 2, 5, 16); c.beginPath(); c.ellipse(20, 6, 12, 6, 0, 0, Math.PI*2); c.fill(); } else if (ht === 'curly') { for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(12+i*3.5, 2+Math.sin(i)*2, 3, 0, Math.PI*2); c.fill(); } } else if (ht === 'fire') { const fc = ['#FF4500','#FF6600','#FFD700']; for (let i = 0; i < 4; i++) { c.fillStyle = fc[i%fc.length]; c.beginPath(); c.moveTo(12+i*5, 3); c.lineTo(14+i*5, -4); c.lineTo(16+i*5, 3); c.fill(); } } }
     if (equipped?.hat) { const hatCol = equipped.hat.color || '#222'; c.fillStyle = hatCol; const ht = equipped.hat.drawData?.type; if (ht === 'baseball_cap') { c.fillRect(8, 0, 24, 5); c.fillRect(6, 5, 28, 2); } else if (ht === 'top_hat') { c.fillRect(12, -8, 16, 10); c.fillRect(8, 2, 24, 3); } else if (ht === 'crown') { c.fillStyle = '#FFD700'; c.fillRect(10, 0, 20, 4); c.beginPath(); c.moveTo(12, 0); c.lineTo(14, -5); c.lineTo(16, 0); c.fill(); c.beginPath(); c.moveTo(18, 0); c.lineTo(20, -6); c.lineTo(22, 0); c.fill(); c.beginPath(); c.moveTo(24, 0); c.lineTo(26, -5); c.lineTo(28, 0); c.fill(); } else if (ht === 'beanie') { c.beginPath(); c.ellipse(20, 2, 12, 6, 0, Math.PI, 0); c.fill(); c.fillRect(8, 2, 24, 4); } else if (ht === 'ninja_headband') { c.fillRect(8, 4, 24, 4); c.fillStyle = shade(hatCol, 10); c.fillRect(8, 5, 24, 1); } }
 
-    // Face in sidebar - clip to head area
     c.save();
     c.beginPath();
     c.rect(10, 1, 20, 14);
     c.clip();
-
     const faceType = equipped?.face?.drawData?.type;
     if (faceType) {
       drawSidebarFace(c, faceType, ec);
@@ -648,54 +580,13 @@ window.TubloxCharacter = (function() {
 
   function drawSidebarFace(c, faceType, ec) {
     switch(faceType) {
-      case 'cool':
-        c.fillStyle = '#111'; c.fillRect(13, 5, 14, 5);
-        c.fillStyle = '#333'; c.fillRect(14, 6, 5, 3); c.fillRect(21, 6, 5, 3);
-        c.strokeStyle = '#000'; c.lineWidth = 0.5;
-        c.beginPath(); c.moveTo(16, 12); c.quadraticCurveTo(20, 13, 23, 11); c.stroke();
-        break;
-      case 'smile':
-        c.fillStyle = '#000';
-        c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.arc(24, 7, 2, 0, Math.PI*2); c.fill();
-        c.strokeStyle = '#000'; c.lineWidth = 1;
-        c.beginPath(); c.arc(20, 9, 5, 0.2, Math.PI-0.2); c.stroke();
-        c.fillStyle = 'rgba(255,150,150,0.15)';
-        c.beginPath(); c.arc(14, 10, 2, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.arc(26, 10, 2, 0, Math.PI*2); c.fill();
-        break;
-      case 'angry':
-        c.fillStyle = '#000';
-        c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.arc(24, 7, 2, 0, Math.PI*2); c.fill();
-        c.strokeStyle = '#000'; c.lineWidth = 1;
-        c.beginPath(); c.moveTo(13, 4); c.lineTo(17, 6); c.stroke();
-        c.beginPath(); c.moveTo(27, 4); c.lineTo(23, 6); c.stroke();
-        c.beginPath(); c.arc(20, 12, 3, Math.PI+0.3, -0.3); c.stroke();
-        break;
-      case 'wink':
-        c.fillStyle = '#000';
-        c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill();
-        c.strokeStyle = '#000'; c.lineWidth = 1;
-        c.beginPath(); c.moveTo(22, 7); c.lineTo(26, 7); c.stroke();
-        c.beginPath(); c.arc(20, 10, 4, 0.1, Math.PI-0.1); c.stroke();
-        break;
-      case 'robot':
-        c.fillStyle = '#00FF00'; c.fillRect(15, 6, 3, 3); c.fillRect(22, 6, 3, 3);
-        c.fillStyle = '#00CC00'; c.fillRect(14, 11, 12, 1);
-        c.fillRect(16, 12, 8, 1);
-        break;
-      case 'skull':
-        c.fillStyle = '#000';
-        c.beginPath(); c.arc(16, 7, 3, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.arc(24, 7, 3, 0, Math.PI*2); c.fill();
-        c.fillRect(19, 10, 2, 3);
-        c.fillStyle = '#888';
-        c.fillRect(15, 13, 2, 2); c.fillRect(19, 13, 2, 2); c.fillRect(23, 13, 2, 2);
-        break;
-      default:
-        c.fillStyle = '#111'; c.fillRect(15,6,4,4); c.fillRect(22,6,4,4);
-        c.fillStyle = ec; c.fillRect(16,7,2,2); c.fillRect(23,7,2,2);
+      case 'cool': c.fillStyle = '#111'; c.fillRect(13, 5, 14, 5); c.fillStyle = '#333'; c.fillRect(14, 6, 5, 3); c.fillRect(21, 6, 5, 3); break;
+      case 'smile': c.fillStyle = '#000'; c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill(); c.beginPath(); c.arc(24, 7, 2, 0, Math.PI*2); c.fill(); c.strokeStyle = '#000'; c.lineWidth = 1; c.beginPath(); c.arc(20, 9, 5, 0.2, Math.PI-0.2); c.stroke(); break;
+      case 'angry': c.fillStyle = '#000'; c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill(); c.beginPath(); c.arc(24, 7, 2, 0, Math.PI*2); c.fill(); c.strokeStyle = '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(13, 4); c.lineTo(17, 6); c.stroke(); c.beginPath(); c.moveTo(27, 4); c.lineTo(23, 6); c.stroke(); break;
+      case 'wink': c.fillStyle = '#000'; c.beginPath(); c.arc(16, 7, 2, 0, Math.PI*2); c.fill(); c.strokeStyle = '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(22, 7); c.lineTo(26, 7); c.stroke(); break;
+      case 'robot': c.fillStyle = '#00FF00'; c.fillRect(15, 6, 3, 3); c.fillRect(22, 6, 3, 3); c.fillStyle = '#00CC00'; c.fillRect(14, 11, 12, 1); break;
+      case 'skull': c.fillStyle = '#000'; c.beginPath(); c.arc(16, 7, 3, 0, Math.PI*2); c.fill(); c.beginPath(); c.arc(24, 7, 3, 0, Math.PI*2); c.fill(); c.fillRect(19, 10, 2, 3); break;
+      default: c.fillStyle = '#111'; c.fillRect(15,6,4,4); c.fillRect(22,6,4,4); c.fillStyle = ec; c.fillRect(16,7,2,2); c.fillRect(23,7,2,2);
     }
   }
 

@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const TelegramBot = require('node-telegram-bot-api');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,9 @@ const MONGO_URI = 'mongodb+srv://Today_Idk:TpdauT434odayTodayToday23@cluster0.rl
 
 const HCAPTCHA_SECRET = 'ES_7fac1684da37404ba4e09ddaa116cade';
 const HCAPTCHA_SITEKEY = '20900438-205e-4c6e-bf50-7d3e922c9c08';
+
+const TG_BOT_TOKEN = '8498206608:AAFvWZnQsQJK-7g_neNggtV5MT-UnUhJPrU';
+const TG_ENABLED = !!TG_BOT_TOKEN;
 
 // ==================== SCHEMAS ====================
 
@@ -170,19 +174,43 @@ const userEquipSchema = new mongoose.Schema({
 });
 const UserEquip = mongoose.model('UserEquip', userEquipSchema);
 
+// ==================== TELEGRAM BOT SCHEMAS ====================
+
+const tgSubscriberSchema = new mongoose.Schema({
+  chatId: { type: Number, required: true, unique: true },
+  username: { type: String, default: '' },
+  subscribed: { type: Boolean, default: true },
+  notifications: {
+    newGames: { type: Boolean, default: true },
+    playerMilestones: { type: Boolean, default: true },
+    dailyStats: { type: Boolean, default: true }
+  },
+  createdAt: { type: Date, default: Date.now }
+});
+const TgSubscriber = mongoose.model('TgSubscriber', tgSubscriberSchema);
+
+const onlineHistorySchema = new mongoose.Schema({
+  place: { type: String, required: true },
+  playerCount: { type: Number, default: 0 },
+  timestamp: { type: Date, default: Date.now }
+});
+onlineHistorySchema.index({ place: 1, timestamp: -1 });
+onlineHistorySchema.index({ timestamp: 1 }, { expireAfterSeconds: 604800 });
+const OnlineHistory = mongoose.model('OnlineHistory', onlineHistorySchema);
+
 // ==================== ASSET STORE ====================
 
 const ASSET_STORE = [
-  { id: 'sword', name: 'Sword', category: 'weapon', icon: '⚔️', description: 'Melee weapon', defaults: { damage: 20, range: 50, cooldown: 500 } },
-  { id: 'flashlight', name: 'Flashlight', category: 'tool', icon: '🔦', description: 'Illuminates dark areas', defaults: { radius: 200, brightness: 1 } },
-  { id: 'shield', name: 'Shield', category: 'defense', icon: '🛡️', description: 'Blocks damage', defaults: { blockChance: 0.5, durability: 100 } },
-  { id: 'speed_boost', name: 'Speed Boost', category: 'powerup', icon: '⚡', description: 'Increases speed', defaults: { multiplier: 1.5, duration: 5000 } },
-  { id: 'jump_boost', name: 'Jump Boost', category: 'powerup', icon: '🦘', description: 'Increases jump', defaults: { multiplier: 1.5, duration: 5000 } },
-  { id: 'coin', name: 'Coin', category: 'collectible', icon: '🪙', description: 'Currency', defaults: { value: 1 } },
-  { id: 'heart', name: 'Heart', category: 'collectible', icon: '❤️', description: 'Restores health', defaults: { healAmount: 25 } },
-  { id: 'key', name: 'Key', category: 'tool', icon: '🔑', description: 'Opens doors', defaults: {} },
-  { id: 'battery', name: 'Battery', category: 'tool', icon: '🔋', description: 'Recharges flashlight', defaults: { recharge: 25 } },
-  { id: 'note', name: 'Note', category: 'collectible', icon: '📝', description: 'Readable note', defaults: { text: 'An old note...' } }
+  { id: 'sword', name: 'Sword', category: 'weapon', icon: 'sword', description: 'Melee weapon', defaults: { damage: 20, range: 50, cooldown: 500 } },
+  { id: 'flashlight', name: 'Flashlight', category: 'tool', icon: 'flashlight', description: 'Illuminates dark areas', defaults: { radius: 200, brightness: 1 } },
+  { id: 'shield', name: 'Shield', category: 'defense', icon: 'shield', description: 'Blocks damage', defaults: { blockChance: 0.5, durability: 100 } },
+  { id: 'speed_boost', name: 'Speed Boost', category: 'powerup', icon: 'speed', description: 'Increases speed', defaults: { multiplier: 1.5, duration: 5000 } },
+  { id: 'jump_boost', name: 'Jump Boost', category: 'powerup', icon: 'jump', description: 'Increases jump', defaults: { multiplier: 1.5, duration: 5000 } },
+  { id: 'coin', name: 'Coin', category: 'collectible', icon: 'coin', description: 'Currency', defaults: { value: 1 } },
+  { id: 'heart', name: 'Heart', category: 'collectible', icon: 'heart', description: 'Restores health', defaults: { healAmount: 25 } },
+  { id: 'key', name: 'Key', category: 'tool', icon: 'key', description: 'Opens doors', defaults: {} },
+  { id: 'battery', name: 'Battery', category: 'tool', icon: 'battery', description: 'Recharges flashlight', defaults: { recharge: 25 } },
+  { id: 'note', name: 'Note', category: 'collectible', icon: 'note', description: 'Readable note', defaults: { text: 'An old note...' } }
 ];
 
 // ==================== MIDDLEWARE ====================
@@ -243,6 +271,554 @@ async function checkDailyReward(user) {
   }
   if (rewarded) await user.save();
   return { rewarded, rewardAmount, totalUrus: user.urus, dailyStrikes: user.dailyStrikes, streakReset, currentRewardRate: getStrikeReward(user.dailyStrikes), nextMilestone: getNextMilestone(user.dailyStrikes) };
+}
+
+// ==================== TELEGRAM BOT ====================
+
+let tgBot = null;
+let tgBotFunctions = null;
+
+const botStats = {
+  lastNotifiedGames: new Set(),
+  peakOnline: {},
+  snapshotInterval: null,
+  notifyInterval: null
+};
+
+function getOnlineCounts() {
+  const counts = {};
+  for (const [, room] of Object.entries(rooms)) {
+    const pc = Object.keys(room.players).length;
+    if (pc > 0) counts[room.place] = (counts[room.place] || 0) + pc;
+  }
+  return counts;
+}
+
+function escTg(str) {
+  if (!str) return '';
+  return String(str).replace(/\*/g, '\\*').replace(/_/g, '\\_').replace(/`/g, '\\`').replace(/\[/g, '\\[');
+}
+
+function makeBar(pct) {
+  const f = Math.round(pct / 10);
+  return '#'.repeat(f) + '-'.repeat(10 - f);
+}
+
+function initTelegramBot() {
+  if (!TG_ENABLED) {
+    console.log('[TG Bot] Disabled - no token');
+    return null;
+  }
+
+  tgBot = new TelegramBot(TG_BOT_TOKEN, { polling: true });
+  console.log('[TG Bot] Starting...');
+
+  // /start
+  tgBot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      await TgSubscriber.findOneAndUpdate(
+        { chatId },
+        { chatId, username: msg.from?.username || '', subscribed: true },
+        { upsert: true, new: true }
+      );
+    } catch(e) {}
+
+    const text = `*TuStats Places Bot*
+
+Слежу за всеми плейсами Tublox в реальном времени.
+
+*Команды:*
+/places - Все активные плейсы
+/online - Текущий онлайн
+/top - Топ плейсов по играм
+/stats - Общая статистика
+/place slug - Детали плейса
+/history slug - История онлайна
+/search запрос - Поиск плейсов
+/peak - Пиковый онлайн за сегодня
+/new - Недавно созданные
+/notify - Настройки уведомлений
+/help - Справка
+
+Вы подписаны на уведомления.`;
+
+    tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+  });
+
+  // /places
+  tgBot.onText(/\/places/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const games = await Game.find({ status: 'active' }).select('slug name type totalPlays maxPlayers').sort({ totalPlays: -1 });
+      if (games.length === 0) return tgBot.sendMessage(chatId, 'Нет активных плейсов');
+
+      const oc = getOnlineCounts();
+      let text = '*Активные плейсы Tublox*\n\n';
+
+      games.forEach((g, i) => {
+        const online = oc[g.slug] || 0;
+        const dot = online > 0 ? '[ON]' : '[--]';
+        text += `${i + 1}. *${escTg(g.name)}* (${g.type})\n`;
+        text += `   ${dot} Online: \`${online}/${g.maxPlayers}\` | Plays: \`${g.totalPlays}\`\n`;
+        text += `   slug: \`${g.slug}\`\n\n`;
+      });
+
+      text += `Всего плейсов: ${games.length}`;
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) {
+      console.error('[TG /places]', e);
+      tgBot.sendMessage(chatId, 'Ошибка загрузки');
+    }
+  });
+
+  // /online
+  tgBot.onText(/\/online/, async (msg) => {
+    const chatId = msg.chat.id;
+    const oc = getOnlineCounts();
+    const totalOnline = Object.values(oc).reduce((a, b) => a + b, 0);
+    const totalRooms = Object.keys(rooms).length;
+
+    if (totalOnline === 0) return tgBot.sendMessage(chatId, 'Сейчас никого нет онлайн.\nКомнат: 0');
+
+    let text = `*Онлайн: ${totalOnline} игроков*\n\n`;
+    const sorted = Object.entries(oc).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+
+    for (const [slug, count] of sorted) {
+      const game = await Game.findOne({ slug }).select('name maxPlayers');
+      const name = game ? game.name : slug;
+      const max = game ? game.maxPlayers : 20;
+      const pct = Math.round((count / max) * 100);
+      text += `*${escTg(name)}*\n`;
+      text += `   \`${count}/${max}\` [${makeBar(pct)}]\n\n`;
+    }
+
+    text += `Комнат: ${totalRooms}`;
+    tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+  });
+
+  // /top
+  tgBot.onText(/\/top/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const games = await Game.find({ status: 'active' }).select('slug name totalPlays type').sort({ totalPlays: -1 }).limit(10);
+      if (games.length === 0) return tgBot.sendMessage(chatId, 'Нет плейсов');
+
+      let text = '*Топ-10 плейсов*\n\n';
+      games.forEach((g, i) => {
+        const pos = i < 3 ? ['1st', '2nd', '3rd'][i] : `${i + 1}.`;
+        text += `${pos} *${escTg(g.name)}* (${g.type})\n`;
+        text += `   \`${g.totalPlays.toLocaleString()}\` plays\n\n`;
+      });
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) { tgBot.sendMessage(chatId, 'Ошибка'); }
+  });
+
+  // /stats
+  tgBot.onText(/\/stats/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const totalUsers = await User.countDocuments();
+      const totalGames = await Game.countDocuments({ status: 'active' });
+      const totalStudioGames = await StudioGame.countDocuments();
+      const publicStudioGames = await StudioGame.countDocuments({ status: 'public', published: true });
+      const totalMarketItems = await MarketItem.countDocuments({ active: true });
+      const totalPurchases = await UserInventory.countDocuments();
+      const oc = getOnlineCounts();
+      const totalOnline = Object.values(oc).reduce((a, b) => a + b, 0);
+      const totalRooms = Object.keys(rooms).length;
+      const playsAgg = await Game.aggregate([{ $match: { status: 'active' } }, { $group: { _id: null, total: { $sum: '$totalPlays' } } }]);
+      const playsSum = playsAgg[0]?.total || 0;
+      const last24h = new Date(Date.now() - 86400000);
+      const newUsers24h = await User.countDocuments({ createdAt: { $gte: last24h } });
+      const activeUsers24h = await User.countDocuments({ lastLogin: { $gte: last24h } });
+
+      let text = `*Статистика Tublox*\n\n`;
+      text += `*Пользователи*\n`;
+      text += `  Всего: \`${totalUsers.toLocaleString()}\`\n`;
+      text += `  Новых за 24ч: \`${newUsers24h}\`\n`;
+      text += `  Активных за 24ч: \`${activeUsers24h}\`\n\n`;
+      text += `*Плейсы*\n`;
+      text += `  Активных: \`${totalGames}\`\n`;
+      text += `  Студия всего: \`${totalStudioGames}\`\n`;
+      text += `  Опубликовано: \`${publicStudioGames}\`\n`;
+      text += `  Всего запусков: \`${playsSum.toLocaleString()}\`\n\n`;
+      text += `*Онлайн*\n`;
+      text += `  Сейчас: \`${totalOnline}\` игроков\n`;
+      text += `  Комнат: \`${totalRooms}\`\n\n`;
+      text += `*Маркет*\n`;
+      text += `  Товаров: \`${totalMarketItems}\`\n`;
+      text += `  Покупок: \`${totalPurchases.toLocaleString()}\`\n\n`;
+      text += `_${new Date().toLocaleString('ru-RU', { timeZone: 'UTC' })} UTC_`;
+
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) {
+      console.error('[TG /stats]', e);
+      tgBot.sendMessage(chatId, 'Ошибка');
+    }
+  });
+
+  // /place <slug>
+  tgBot.onText(/\/place(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const slug = match[1]?.trim();
+    if (!slug) return tgBot.sendMessage(chatId, 'Используй: `/place slug`\nНайти slug: /places', { parse_mode: 'Markdown' });
+
+    try {
+      const game = await Game.findOne({ slug, status: 'active' });
+      if (!game) return tgBot.sendMessage(chatId, `Плейс \`${escTg(slug)}\` не найден`, { parse_mode: 'Markdown' });
+
+      const oc = getOnlineCounts();
+      const online = oc[slug] || 0;
+
+      const playersInPlace = [];
+      for (const [, room] of Object.entries(rooms)) {
+        if (room.place === slug) {
+          for (const [, player] of Object.entries(room.players)) {
+            playersInPlace.push(player.username);
+          }
+        }
+      }
+
+      let author = 'Tublox';
+      if (slug.startsWith('studio_')) {
+        const sg = await StudioGame.findById(slug.replace('studio_', '')).select('ownerUsername');
+        if (sg) author = sg.ownerUsername;
+      }
+
+      const history = await OnlineHistory.find({ place: slug }).sort({ timestamp: -1 }).limit(24);
+      const peakToday = botStats.peakOnline[slug] || online;
+
+      let text = `*${escTg(game.name)}*\n\n`;
+      text += `${escTg(game.description || 'Нет описания')}\n\n`;
+      text += `Slug: \`${slug}\`\n`;
+      text += `Автор: *${escTg(author)}*\n`;
+      text += `Тип: \`${game.type}\`\n`;
+      text += `Запусков: \`${game.totalPlays.toLocaleString()}\`\n`;
+      text += `Макс игроков: \`${game.maxPlayers}\`\n\n`;
+      text += `*Online: ${online}/${game.maxPlayers}*\n`;
+      text += `Пик сегодня: \`${peakToday}\`\n`;
+
+      if (playersInPlace.length > 0) {
+        text += `\n*Игроки:*\n`;
+        playersInPlace.forEach(p => { text += `  - \`${escTg(p)}\`\n`; });
+      }
+
+      if (history.length > 0) {
+        text += `\n*Онлайн за последние часы:*\n\`\`\`\n`;
+        const chartData = history.slice(0, 12).reverse();
+        const maxC = Math.max(1, ...chartData.map(h => h.playerCount));
+        chartData.forEach(h => {
+          const t = new Date(h.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+          const bl = Math.round((h.playerCount / maxC) * 12);
+          text += `${t} ${'#'.repeat(bl)}${'.'.repeat(12 - bl)} ${h.playerCount}\n`;
+        });
+        text += `\`\`\``;
+      }
+
+      text += `\n_${new Date().toLocaleString('ru-RU', { timeZone: 'UTC' })} UTC_`;
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) {
+      console.error('[TG /place]', e);
+      tgBot.sendMessage(chatId, 'Ошибка');
+    }
+  });
+
+  // /history <slug>
+  tgBot.onText(/\/history(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const slug = match[1]?.trim();
+    if (!slug) return tgBot.sendMessage(chatId, 'Используй: `/history slug`', { parse_mode: 'Markdown' });
+
+    try {
+      const game = await Game.findOne({ slug }).select('name');
+      if (!game) return tgBot.sendMessage(chatId, 'Плейс не найден');
+
+      const history = await OnlineHistory.find({ place: slug }).sort({ timestamp: -1 }).limit(48);
+      if (history.length === 0) return tgBot.sendMessage(chatId, `Нет данных для *${escTg(game.name)}*`, { parse_mode: 'Markdown' });
+
+      const rev = [...history].reverse();
+      const maxC = Math.max(1, ...rev.map(h => h.playerCount));
+      const avg = Math.round(rev.reduce((a, h) => a + h.playerCount, 0) / rev.length);
+      const peakEntry = history.find(h => h.playerCount === maxC);
+
+      let text = `*История онлайна: ${escTg(game.name)}*\n\n`;
+      text += `Пик: \`${maxC}\` игроков`;
+      if (peakEntry) text += ` (${new Date(peakEntry.timestamp).toLocaleString('ru-RU', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })})`;
+      text += `\nСреднее: \`${avg}\` игроков\n\n\`\`\`\n`;
+
+      const show = rev.slice(-24);
+      show.forEach(h => {
+        const t = new Date(h.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        const bl = Math.round((h.playerCount / maxC) * 16);
+        text += `${t} ${'#'.repeat(bl)}${'.'.repeat(16 - bl)} ${h.playerCount}\n`;
+      });
+      text += `\`\`\`\n_Данные за ${history.length} записей_`;
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) { tgBot.sendMessage(chatId, 'Ошибка'); }
+  });
+
+  // /search
+  tgBot.onText(/\/search(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const q = match[1]?.trim();
+    if (!q) return tgBot.sendMessage(chatId, 'Используй: `/search название`', { parse_mode: 'Markdown' });
+
+    try {
+      const games = await Game.find({ status: 'active', name: { $regex: q, $options: 'i' } }).select('slug name type totalPlays').limit(10);
+      if (games.length === 0) return tgBot.sendMessage(chatId, `Ничего не найдено: "${escTg(q)}"`, { parse_mode: 'Markdown' });
+
+      const oc = getOnlineCounts();
+      let text = `*Поиск: "${escTg(q)}"*\n\n`;
+      games.forEach((g, i) => {
+        const online = oc[g.slug] || 0;
+        const dot = online > 0 ? '[ON]' : '[--]';
+        text += `${i + 1}. *${escTg(g.name)}*\n`;
+        text += `   ${dot} Online: \`${online}\` | Plays: \`${g.totalPlays}\`\n`;
+        text += `   \`/place ${g.slug}\`\n\n`;
+      });
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) { tgBot.sendMessage(chatId, 'Ошибка'); }
+  });
+
+  // /peak
+  tgBot.onText(/\/peak/, async (msg) => {
+    const chatId = msg.chat.id;
+    const peaks = Object.entries(botStats.peakOnline);
+    if (peaks.length === 0) return tgBot.sendMessage(chatId, 'Нет данных — бот только запустился');
+
+    const sorted = peaks.sort((a, b) => b[1] - a[1]);
+    let text = '*Пиковый онлайн за сегодня*\n\n';
+    for (const [slug, peak] of sorted) {
+      const game = await Game.findOne({ slug }).select('name');
+      text += `*${escTg(game?.name || slug)}*: \`${peak}\` игроков\n`;
+    }
+    const totalPeak = sorted.reduce((a, [, p]) => a + p, 0);
+    text += `\nОбщий пик: \`${totalPeak}\``;
+    tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+  });
+
+  // /new
+  tgBot.onText(/\/new/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const recent = await Game.find({ status: 'active' }).select('slug name type totalPlays createdAt').sort({ createdAt: -1 }).limit(10);
+      if (recent.length === 0) return tgBot.sendMessage(chatId, 'Нет плейсов');
+
+      let text = '*Недавно созданные плейсы*\n\n';
+      for (const g of recent) {
+        let author = 'Tublox';
+        if (g.slug.startsWith('studio_')) {
+          const sg = await StudioGame.findById(g.slug.replace('studio_', '')).select('ownerUsername');
+          if (sg) author = sg.ownerUsername;
+        }
+        const date = new Date(g.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        text += `*${escTg(g.name)}*\n`;
+        text += `   Автор: ${escTg(author)} | ${date} | ${g.totalPlays} plays\n`;
+        text += `   \`/place ${g.slug}\`\n\n`;
+      }
+      tgBot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } catch(e) { tgBot.sendMessage(chatId, 'Ошибка'); }
+  });
+
+  // /notify
+  tgBot.onText(/\/notify/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      let sub = await TgSubscriber.findOne({ chatId });
+      if (!sub) sub = await TgSubscriber.create({ chatId, username: msg.from?.username || '' });
+
+      const kb = {
+        inline_keyboard: [
+          [{ text: `${sub.notifications.newGames ? '[V]' : '[X]'} Новые игры`, callback_data: 'toggle_newGames' }],
+          [{ text: `${sub.notifications.playerMilestones ? '[V]' : '[X]'} Вехи игроков`, callback_data: 'toggle_playerMilestones' }],
+          [{ text: `${sub.notifications.dailyStats ? '[V]' : '[X]'} Ежедневная сводка`, callback_data: 'toggle_dailyStats' }],
+          [{ text: sub.subscribed ? 'Отписаться от всего' : 'Подписаться', callback_data: 'toggle_subscribe' }]
+        ]
+      };
+      tgBot.sendMessage(chatId, '*Настройки уведомлений*\n\nНажми кнопку для переключения:', { parse_mode: 'Markdown', reply_markup: kb });
+    } catch(e) { tgBot.sendMessage(chatId, 'Ошибка'); }
+  });
+
+  // /help
+  tgBot.onText(/\/help/, (msg) => {
+    const text = `*TuStats Places - Справка*
+
+*Обзор:*
+/places - Список плейсов
+/online - Кто играет сейчас
+/top - Топ-10 по популярности
+/new - Новые плейсы
+
+*Детали:*
+/place slug - Инфо о плейсе
+/history slug - График онлайна 48ч
+/search запрос - Поиск
+
+*Статистика:*
+/stats - Общая статистика
+/peak - Пики за сегодня
+
+*Настройки:*
+/notify - Уведомления
+
+Slug - уникальный ID плейса, смотри /places
+
+Бот уведомляет о:
+- Новых опубликованных играх
+- Достижениях 100/500/1000 plays
+- Ежедневной сводке в 00:00 UTC`;
+    tgBot.sendMessage(msg.chat.id, text, { parse_mode: 'Markdown' });
+  });
+
+  // Callback queries
+  tgBot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+    try {
+      let sub = await TgSubscriber.findOne({ chatId });
+      if (!sub) sub = await TgSubscriber.create({ chatId });
+
+      if (data === 'toggle_subscribe') {
+        sub.subscribed = !sub.subscribed;
+        await sub.save();
+        tgBot.answerCallbackQuery(query.id, { text: sub.subscribed ? 'Подписка включена' : 'Подписка выключена' });
+      } else if (data.startsWith('toggle_')) {
+        const key = data.replace('toggle_', '');
+        if (sub.notifications[key] !== undefined) {
+          sub.notifications[key] = !sub.notifications[key];
+          sub.markModified('notifications');
+          await sub.save();
+          tgBot.answerCallbackQuery(query.id, { text: `${sub.notifications[key] ? 'Включено' : 'Выключено'}: ${key}` });
+        }
+      }
+
+      const kb = {
+        inline_keyboard: [
+          [{ text: `${sub.notifications.newGames ? '[V]' : '[X]'} Новые игры`, callback_data: 'toggle_newGames' }],
+          [{ text: `${sub.notifications.playerMilestones ? '[V]' : '[X]'} Вехи игроков`, callback_data: 'toggle_playerMilestones' }],
+          [{ text: `${sub.notifications.dailyStats ? '[V]' : '[X]'} Ежедневная сводка`, callback_data: 'toggle_dailyStats' }],
+          [{ text: sub.subscribed ? 'Отписаться от всего' : 'Подписаться', callback_data: 'toggle_subscribe' }]
+        ]
+      };
+      tgBot.editMessageReplyMarkup(kb, { chat_id: chatId, message_id: query.message.message_id }).catch(() => {});
+    } catch(e) { tgBot.answerCallbackQuery(query.id, { text: 'Ошибка' }); }
+  });
+
+  // Broadcast
+  async function broadcastNotification(text, filter = {}) {
+    try {
+      const subs = await TgSubscriber.find({ subscribed: true, ...filter });
+      let sent = 0;
+      for (const sub of subs) {
+        try {
+          await tgBot.sendMessage(sub.chatId, text, { parse_mode: 'Markdown' });
+          sent++;
+          if (sent % 25 === 0) await new Promise(r => setTimeout(r, 1000));
+        } catch(e) {
+          if (e.response?.statusCode === 403) { sub.subscribed = false; await sub.save(); }
+        }
+      }
+      console.log(`[TG Bot] Broadcast: ${sent}/${subs.length}`);
+    } catch(e) { console.error('[TG Broadcast]', e); }
+  }
+
+  // Notify new game
+  async function notifyNewGame(studioGame) {
+    if (!TG_ENABLED || !tgBot) return;
+    if (botStats.lastNotifiedGames.has(String(studioGame._id))) return;
+    botStats.lastNotifiedGames.add(String(studioGame._id));
+
+    const text = `*Новый плейс опубликован*
+
+*${escTg(studioGame.title)}*
+Автор: *${escTg(studioGame.ownerUsername)}*
+${escTg(studioGame.description || 'Без описания')}
+
+\`/place studio_${studioGame._id}\``;
+
+    await broadcastNotification(text, { 'notifications.newGames': true });
+  }
+
+  // Check milestones
+  async function checkPlayMilestones(slug, totalPlays) {
+    if (!TG_ENABLED || !tgBot) return;
+    const milestones = [100, 250, 500, 1000, 2500, 5000, 10000];
+    const ms = milestones.find(m => totalPlays === m);
+    if (!ms) return;
+
+    const game = await Game.findOne({ slug }).select('name');
+    if (!game) return;
+
+    let author = 'Tublox';
+    if (slug.startsWith('studio_')) {
+      const sg = await StudioGame.findById(slug.replace('studio_', '')).select('ownerUsername');
+      if (sg) author = sg.ownerUsername;
+    }
+
+    const text = `*Веха достигнута*
+
+*${escTg(game.name)}* набрал *${ms.toLocaleString()}* запусков
+Автор: *${escTg(author)}*
+
+\`/place ${slug}\``;
+
+    await broadcastNotification(text, { 'notifications.playerMilestones': true });
+  }
+
+  // Snapshots every 30 min
+  botStats.snapshotInterval = setInterval(async () => {
+    try {
+      const oc = getOnlineCounts();
+      for (const [slug, count] of Object.entries(oc)) {
+        await new OnlineHistory({ place: slug, playerCount: count }).save();
+        if (!botStats.peakOnline[slug] || count > botStats.peakOnline[slug]) botStats.peakOnline[slug] = count;
+      }
+      const activeGames = await Game.find({ status: 'active' }).select('slug');
+      for (const g of activeGames) {
+        if (!oc[g.slug]) await new OnlineHistory({ place: g.slug, playerCount: 0 }).save();
+      }
+    } catch(e) { console.error('[TG Snapshot]', e); }
+  }, 30 * 60 * 1000);
+
+  // Daily stats at midnight
+  botStats.notifyInterval = setInterval(async () => {
+    const now = new Date();
+    if (now.getUTCHours() === 0 && now.getUTCMinutes() < 5) {
+      try {
+        const totalUsers = await User.countDocuments();
+        const totalGames = await Game.countDocuments({ status: 'active' });
+        const yesterday = new Date(Date.now() - 86400000);
+        const newUsers = await User.countDocuments({ createdAt: { $gte: yesterday } });
+        const newGames = await Game.countDocuments({ createdAt: { $gte: yesterday }, status: 'active' });
+        const playsAgg = await Game.aggregate([{ $match: { status: 'active' } }, { $group: { _id: null, total: { $sum: '$totalPlays' } } }]);
+        const peaks = Object.entries(botStats.peakOnline);
+        const maxPeak = peaks.length > 0 ? Math.max(...peaks.map(([, p]) => p)) : 0;
+
+        let text = `*Ежедневная сводка Tublox*\n`;
+        text += `${now.toLocaleDateString('ru-RU', { timeZone: 'UTC' })}\n\n`;
+        text += `Пользователей: \`${totalUsers}\` (+${newUsers})\n`;
+        text += `Плейсов: \`${totalGames}\` (+${newGames})\n`;
+        text += `Запусков: \`${(playsAgg[0]?.total || 0).toLocaleString()}\`\n`;
+        text += `Макс онлайн: \`${maxPeak}\`\n`;
+
+        if (peaks.length > 0) {
+          const topP = peaks.sort((a, b) => b[1] - a[1])[0];
+          const topG = await Game.findOne({ slug: topP[0] }).select('name');
+          text += `Популярный: *${escTg(topG?.name || topP[0])}* (\`${topP[1]}\` пик)\n`;
+        }
+
+        await broadcastNotification(text, { 'notifications.dailyStats': true });
+        botStats.peakOnline = {};
+      } catch(e) { console.error('[TG Daily]', e); }
+    }
+  }, 5 * 60 * 1000);
+
+  tgBot.on('polling_error', (err) => { console.error('[TG Bot] Polling:', err.message); });
+  tgBot.on('error', (err) => { console.error('[TG Bot] Error:', err.message); });
+
+  console.log('[TG Bot] Ready');
+  return { notifyNewGame, checkPlayMilestones, broadcastNotification };
 }
 
 // ==================== PAGES ====================
@@ -307,31 +883,17 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Not found' });
     const reward = await checkDailyReward(user);
 
-    // Load equipped items
     let equipped = {};
     try {
-      const equip = await UserEquip.findOne({ userId: req.userId })
-        .populate('shirt pants face hair hat accessory body_part');
+      const equip = await UserEquip.findOne({ userId: req.userId }).populate('shirt pants face hair hat accessory body_part');
       if (equip) {
         ['shirt','pants','face','hair','hat','accessory','body_part'].forEach(cat => {
-          if (equip[cat]) {
-            equipped[cat] = {
-              id: equip[cat]._id,
-              name: equip[cat].name,
-              drawData: equip[cat].drawData,
-              color: equip[cat+'Color'] || (equip[cat].colors && equip[cat].colors[0]) || ''
-            };
-          }
+          if (equip[cat]) equipped[cat] = { id: equip[cat]._id, name: equip[cat].name, drawData: equip[cat].drawData, color: equip[cat+'Color'] || (equip[cat].colors && equip[cat].colors[0]) || '' };
         });
       }
     } catch(e) {}
 
-    res.json({
-      username: user.username, avatar: user.avatar, bio: user.bio,
-      urus: user.urus, dailyStrikes: user.dailyStrikes, dailyReward: reward,
-      gamesPlayed: user.gamesPlayed, createdAt: user.createdAt, lastLogin: user.lastLogin,
-      equipped
-    });
+    res.json({ username: user.username, avatar: user.avatar, bio: user.bio, urus: user.urus, dailyStrikes: user.dailyStrikes, dailyReward: reward, gamesPlayed: user.gamesPlayed, createdAt: user.createdAt, lastLogin: user.lastLogin, equipped });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -340,9 +902,7 @@ app.post('/api/logout', (req, res) => { res.clearCookie('token'); res.json({ suc
 app.post('/api/avatar', authMiddleware, async (req, res) => {
   try {
     const { bodyColor, headColor, eyeColor } = req.body;
-    await User.findByIdAndUpdate(req.userId, {
-      avatar: { bodyColor: bodyColor || '#FFFFFF', headColor: headColor || '#FFFFFF', eyeColor: eyeColor || '#000000' }
-    });
+    await User.findByIdAndUpdate(req.userId, { avatar: { bodyColor: bodyColor || '#FFFFFF', headColor: headColor || '#FFFFFF', eyeColor: eyeColor || '#000000' } });
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
@@ -362,10 +922,10 @@ app.get('/api/profile/:username', async (req, res) => {
     const username = req.params.username.toLowerCase();
     const user = await User.findOne({ username }).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
+
     let publishedGames = [];
     try {
-      const sg = await StudioGame.find({ owner: user._id, status: 'public', published: true })
-        .select('title description thumbnailData plays createdAt updatedAt').sort({ updatedAt: -1 }).limit(20);
+      const sg = await StudioGame.find({ owner: user._id, status: 'public', published: true }).select('title description thumbnailData plays createdAt updatedAt').sort({ updatedAt: -1 }).limit(20);
       publishedGames = sg.map(g => ({ id: g._id, slug: `studio_${g._id}`, title: g.title, description: g.description, thumbnailData: g.thumbnailData, plays: g.plays, createdAt: g.createdAt, updatedAt: g.updatedAt }));
     } catch (e) {}
 
@@ -386,6 +946,7 @@ app.get('/api/profile/:username', async (req, res) => {
       }
       if (isOnline) break;
     }
+
     res.json({ username: user.username, avatar: user.avatar, bio: user.bio, urus: user.urus, dailyStrikes: user.dailyStrikes, gamesPlayed: user.gamesPlayed, createdAt: user.createdAt, lastLogin: user.lastLogin, publishedGames, isOnline, currentGame, equipped });
   } catch (e) { console.error('[profile]', e); res.status(500).json({ error: 'Server error' }); }
 });
@@ -506,8 +1067,12 @@ app.post('/api/studio/publish/:id', authMiddleware, async (req, res) => {
     game.updatedAt = new Date();
     game.markModified('settings');
     await game.save();
-    if (status === 'public') { await syncStudioToLiveGame(game); }
-    else { await Game.deleteOne({ slug: `studio_${game._id}` }); clearPlaceCache(`studio_${game._id}`); }
+    if (status === 'public') {
+      await syncStudioToLiveGame(game);
+      if (tgBotFunctions) tgBotFunctions.notifyNewGame(game).catch(e => console.error('[TG notify]', e));
+    } else {
+      await Game.deleteOne({ slug: `studio_${game._id}` }); clearPlaceCache(`studio_${game._id}`);
+    }
     res.json({ success: true, status: game.status, published: game.published });
   } catch (e) { console.error('[Publish]', e); res.status(500).json({ error: 'Server error' }); }
 });
@@ -659,7 +1224,7 @@ app.get('/api/market/equipped/:username', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Admin seed
+// Admin
 app.post('/api/admin/market/seed', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -688,7 +1253,7 @@ app.post('/api/admin/market/seed', authMiddleware, async (req, res) => {
       { name: 'Long Hair', description: 'Flowing hair', category: 'hair', price: 18, rarity: 'uncommon', colors: ['#222222','#8B4513','#FFD700','#FF6B6B','#A855F7'], drawData: { type: 'long' }, tags: ['long'] },
       { name: 'Mohawk', description: 'Punk mohawk', category: 'hair', price: 22, rarity: 'uncommon', colors: ['#FF4444','#22C55E','#A855F7','#3B82F6','#222222'], drawData: { type: 'mohawk' }, tags: ['punk'] },
       { name: 'Curly', description: 'Curly afro', category: 'hair', price: 16, rarity: 'common', colors: ['#222222','#8B4513','#4a3728'], drawData: { type: 'curly' }, tags: ['curly'] },
-      { name: 'Fire Hair', description: 'Flame hair!', category: 'hair', price: 120, rarity: 'legendary', colors: ['#FF4500'], drawData: { type: 'fire' }, tags: ['fire','legendary'], featured: true, isLimited: true, stock: 20 },
+      { name: 'Fire Hair', description: 'Flame hair', category: 'hair', price: 120, rarity: 'legendary', colors: ['#FF4500'], drawData: { type: 'fire' }, tags: ['fire','legendary'], featured: true, isLimited: true, stock: 20 },
       { name: 'Baseball Cap', description: 'Classic cap', category: 'hat', price: 8, rarity: 'common', colors: ['#222222','#EF4444','#3B82F6','#22C55E','#FFFFFF'], drawData: { type: 'baseball_cap' }, tags: ['cap'] },
       { name: 'Top Hat', description: 'Fancy hat', category: 'hat', price: 30, rarity: 'rare', colors: ['#222222','#4B0082'], drawData: { type: 'top_hat' }, tags: ['fancy'] },
       { name: 'Crown', description: 'Golden crown', category: 'hat', price: 150, rarity: 'legendary', colors: ['#FFD700'], drawData: { type: 'crown' }, tags: ['royal','legendary'], featured: true, isLimited: true, stock: 10 },
@@ -785,6 +1350,12 @@ io.on('connection', (socket) => {
       user.gamesPlayed += 1; await user.save();
       await Game.updateOne({ slug: place }, { $inc: { totalPlays: 1 } });
 
+      // Telegram milestone check
+      if (tgBotFunctions) {
+        const updatedGame = await Game.findOne({ slug: place }).select('totalPlays');
+        if (updatedGame) tgBotFunctions.checkPlayMilestones(place, updatedGame.totalPlays).catch(() => {});
+      }
+
       const roomId = getOrCreateRoom(place, placeData.maxPlayers);
       socket.join(roomId); playerRooms[socket.id] = roomId;
 
@@ -797,7 +1368,6 @@ io.on('connection', (socket) => {
         if (es !== -1) inventory[es] = { id: 'sword', name: 'Sword', damage: placeData.items.sword.damage || 20, range: placeData.items.sword.range || 50, cooldown: placeData.items.sword.cooldown || 500 };
       }
 
-      // Load equipped cosmetics
       let equipped = {};
       try {
         const equip = await UserEquip.findOne({ userId }).populate('shirt pants face hair hat accessory body_part');
@@ -925,6 +1495,7 @@ async function start() {
   try {
     await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 15000, socketTimeoutMS: 45000, maxPoolSize: 10, retryWrites: true });
     console.log('[DB] MongoDB connected');
+    tgBotFunctions = initTelegramBot();
     server.listen(PORT, () => { console.log(`[Tublox3] http://localhost:${PORT}`); });
   } catch (err) { console.error('[DB] Failed:', err.message); process.exit(1); }
 }
