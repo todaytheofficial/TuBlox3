@@ -37,22 +37,25 @@
       </div>
     </div>
 
+    <!-- NOTE OVERLAY -->
+    <div id="note-overlay" style="display:none">
+      <div class="note-panel">
+        <p id="note-text"></p>
+        <span class="note-hint">Release to close</span>
+      </div>
+    </div>
+
     <!-- MOBILE CONTROLS -->
     <div id="mobile-controls" style="display:none">
-      <!-- Left side: Joystick -->
+      <!-- Left: Joystick -->
       <div id="mobile-joystick-zone">
         <div id="mobile-joystick">
           <div id="mobile-joystick-knob"></div>
         </div>
       </div>
 
-      <!-- Right side: Action buttons -->
-      <div id="mobile-buttons-zone">
-        <button id="mobile-btn-jump" class="mobile-btn mobile-btn-jump">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-        </button>
+      <!-- Right bottom: Main action buttons (jump, attack) -->
+      <div id="mobile-actions-main">
         <button id="mobile-btn-attack" class="mobile-btn mobile-btn-attack" style="display:none">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14.5 2l6 6-8.5 8.5-6-6z"/>
@@ -60,49 +63,55 @@
             <path d="M2 22l2-2"/>
           </svg>
         </button>
-        <!-- Right side: Action buttons -->
-<div id="mobile-buttons-zone">
-  <button id="mobile-btn-jump" class="mobile-btn mobile-btn-jump">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <polyline points="18 15 12 9 6 15"/>
-    </svg>
-  </button>
-  <button id="mobile-btn-attack" class="mobile-btn mobile-btn-attack" style="display:none">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <path d="M14.5 2l6 6-8.5 8.5-6-6z"/>
-      <path d="M9.5 14.5L4 20"/>
-      <path d="M2 22l2-2"/>
-    </svg>
-  </button>
-  <button id="mobile-btn-use" class="mobile-btn mobile-btn-use" style="display:none">
-    <svg id="mobile-btn-use-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-    </svg>
-  </button>
-  <!-- INTERACT BUTTON (doors, levers) -->
-  <button id="mobile-btn-interact" class="mobile-btn mobile-btn-interact" style="display:none">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
-      <polyline points="10 17 15 12 10 7"/>
-      <line x1="15" y1="12" x2="3" y2="12"/>
-    </svg>
-  </button>
-  <button id="mobile-btn-chat" class="mobile-btn mobile-btn-chat">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-    </svg>
-  </button>
-  <button id="mobile-btn-menu" class="mobile-btn mobile-btn-menu">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  </button>
-</div>
+        <button id="mobile-btn-jump" class="mobile-btn mobile-btn-jump">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+      </div>
 
-      <!-- MOBILE SLOT SWITCHER (bottom center) -->
+      <!-- Right side: Secondary buttons (vertical strip) -->
+      <div id="mobile-actions-side">
+        <button id="mobile-btn-interact" class="mobile-btn mobile-btn-interact" style="display:none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-use" class="mobile-btn mobile-btn-use" style="display:none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-note" class="mobile-btn mobile-btn-note" style="display:none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Top right: Menu/Chat -->
+      <div id="mobile-actions-top">
+        <button id="mobile-btn-chat" class="mobile-btn mobile-btn-chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-menu" class="mobile-btn mobile-btn-menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom center: Slot bar -->
       <div id="mobile-slot-bar">
         <button class="mobile-slot" data-slot="0">1</button>
         <button class="mobile-slot" data-slot="1">2</button>
@@ -111,7 +120,7 @@
       </div>
     </div>
 
-    <!-- KICKED OVERLAY -->
+    <!-- KICKED -->
     <div id="kicked-overlay" style="display:none">
       <div class="kicked-panel">
         <h2>Disconnected</h2>
@@ -120,6 +129,7 @@
       </div>
     </div>
 
+    <!-- ESC MENU -->
     <div id="esc-menu" style="display:none">
       <div class="esc-menu-overlay"></div>
       <div class="esc-menu-panel">

@@ -128,6 +128,7 @@ const studioGameSchema = new mongoose.Schema({
   }},
   plays: { type: Number, default: 0 },
   published: { type: Boolean, default: false },
+  publishedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -136,86 +137,16 @@ const StudioGame = mongoose.model('StudioGame', studioGameSchema);
 // ==================== ASSET STORE DATA ====================
 
 const ASSET_STORE = [
-  {
-    id: 'sword',
-    name: 'Sword',
-    category: 'weapon',
-    icon: '⚔️',
-    description: 'Melee weapon for PVP combat',
-    defaults: { damage: 20, range: 50, cooldown: 500 }
-  },
-  {
-    id: 'flashlight',
-    name: 'Flashlight',
-    category: 'tool',
-    icon: '🔦',
-    description: 'Illuminates dark areas',
-    defaults: { radius: 200, brightness: 1 }
-  },
-  {
-    id: 'shield',
-    name: 'Shield',
-    category: 'defense',
-    icon: '🛡️',
-    description: 'Blocks incoming damage',
-    defaults: { blockChance: 0.5, durability: 100 }
-  },
-  {
-    id: 'speed_boost',
-    name: 'Speed Boost',
-    category: 'powerup',
-    icon: '⚡',
-    description: 'Temporarily increases speed',
-    defaults: { multiplier: 1.5, duration: 5000 }
-  },
-  {
-    id: 'jump_boost',
-    name: 'Jump Boost',
-    category: 'powerup',
-    icon: '🦘',
-    description: 'Temporarily increases jump height',
-    defaults: { multiplier: 1.5, duration: 5000 }
-  },
-  {
-    id: 'coin',
-    name: 'Coin',
-    category: 'collectible',
-    icon: '🪙',
-    description: 'Collectible currency',
-    defaults: { value: 1 }
-  },
-  {
-    id: 'heart',
-    name: 'Heart',
-    category: 'collectible',
-    icon: '❤️',
-    description: 'Restores health',
-    defaults: { healAmount: 25 }
-  },
-  {
-    id: 'key',
-    name: 'Key',
-    category: 'tool',
-    icon: '🔑',
-    description: 'Opens locked doors',
-    defaults: {}
-  },
-  {
-    id: 'battery',
-    name: 'Battery',
-    category: 'tool',
-    icon: '🔋',
-    description: 'Recharges flashlight',
-    defaults: { recharge: 25 }
-  },
-  {
-    id: 'note',
-    name: 'Note',
-    category: 'collectible',
-    icon: '📝',
-    description: 'Readable note',
-    defaults: { text: 'An old note...' }
-  }
+  { id: 'sword', name: 'Sword', category: 'weapon', icon: '⚔️', description: 'Melee weapon for PVP combat', defaults: { damage: 20, range: 50, cooldown: 500 } },
+  { id: 'flashlight', name: 'Flashlight', category: 'tool', icon: '🔦', description: 'Illuminates dark areas', defaults: { radius: 200, brightness: 1 } },
+  { id: 'shield', name: 'Shield', category: 'defense', icon: '🛡️', description: 'Blocks incoming damage', defaults: { blockChance: 0.5, durability: 100 } },
+  { id: 'speed_boost', name: 'Speed Boost', category: 'powerup', icon: '⚡', description: 'Temporarily increases speed', defaults: { multiplier: 1.5, duration: 5000 } },
+  { id: 'jump_boost', name: 'Jump Boost', category: 'powerup', icon: '🦘', description: 'Temporarily increases jump height', defaults: { multiplier: 1.5, duration: 5000 } },
+  { id: 'coin', name: 'Coin', category: 'collectible', icon: '🪙', description: 'Collectible currency', defaults: { value: 1 } },
+  { id: 'heart', name: 'Heart', category: 'collectible', icon: '❤️', description: 'Restores health', defaults: { healAmount: 25 } },
+  { id: 'key', name: 'Key', category: 'tool', icon: '🔑', description: 'Opens locked doors', defaults: {} },
+  { id: 'battery', name: 'Battery', category: 'tool', icon: '🔋', description: 'Recharges flashlight', defaults: { recharge: 25 } },
+  { id: 'note', name: 'Note', category: 'collectible', icon: '📝', description: 'Readable note', defaults: { text: 'An old note...' } }
 ];
 
 // ==================== MIDDLEWARE ====================
@@ -292,12 +223,8 @@ async function checkDailyReward(user) {
   if (rewarded) await user.save();
 
   return {
-    rewarded,
-    rewardAmount,
-    totalUrus: user.urus,
-    dailyStrikes: user.dailyStrikes,
-    streakReset,
-    currentRewardRate: getStrikeReward(user.dailyStrikes),
+    rewarded, rewardAmount, totalUrus: user.urus, dailyStrikes: user.dailyStrikes,
+    streakReset, currentRewardRate: getStrikeReward(user.dailyStrikes),
     nextMilestone: getNextMilestone(user.dailyStrikes)
   };
 }
@@ -348,38 +275,23 @@ app.get('/api/games/:slug/details', async (req, res) => {
       .select('slug name description type thumbnail totalPlays maxPlayers createdAt updatedAt');
     if (!game) return res.status(404).json({ error: 'Game not found' });
 
-    // Try to find studio game for author info
     let author = 'Tublox';
-    let gameId = null;
     if (req.params.slug.startsWith('studio_')) {
       const studioId = req.params.slug.replace('studio_', '');
       const studioGame = await StudioGame.findById(studioId).select('ownerUsername description');
-      if (studioGame) {
-        author = studioGame.ownerUsername;
-      }
+      if (studioGame) author = studioGame.ownerUsername;
     }
 
-    // Online count
     let onlineCount = 0;
     for (const [, room] of Object.entries(rooms)) {
-      if (room.place === req.params.slug) {
-        onlineCount += Object.keys(room.players).length;
-      }
+      if (room.place === req.params.slug) onlineCount += Object.keys(room.players).length;
     }
 
     res.json({
-      slug: game.slug,
-      name: game.name,
-      description: game.description,
-      type: game.type,
-      thumbnail: game.thumbnail,
-      totalPlays: game.totalPlays,
-      maxPlayers: game.maxPlayers,
-      author,
-      gameId: game.slug,
-      onlineCount,
-      createdAt: game.createdAt,
-      updatedAt: game.updatedAt
+      slug: game.slug, name: game.name, description: game.description,
+      type: game.type, thumbnail: game.thumbnail, totalPlays: game.totalPlays,
+      maxPlayers: game.maxPlayers, author, gameId: game.slug, onlineCount,
+      createdAt: game.createdAt, updatedAt: game.updatedAt
     });
   } catch (e) {
     console.error('[game-details]', e);
@@ -433,11 +345,7 @@ app.post('/api/avatar', authMiddleware, async (req, res) => {
   try {
     const { bodyColor, headColor, eyeColor } = req.body;
     await User.findByIdAndUpdate(req.userId, {
-      avatar: {
-        bodyColor: bodyColor || '#FFFFFF',
-        headColor: headColor || '#FFFFFF',
-        eyeColor: eyeColor || '#000000'
-      }
+      avatar: { bodyColor: bodyColor || '#FFFFFF', headColor: headColor || '#FFFFFF', eyeColor: eyeColor || '#000000' }
     });
     res.json({ success: true });
   } catch (e) {
@@ -461,58 +369,32 @@ app.post('/api/bio', authMiddleware, async (req, res) => {
 app.get('/api/profile/:username', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
-    
     const username = req.params.username.toLowerCase();
     const user = await User.findOne({ username }).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Count published studio games by this user
     let publishedGames = [];
     try {
-      const studioGames = await StudioGame.find({ 
-        owner: user._id, 
-        status: 'public', 
-        published: true 
-      }).select('title description thumbnailData plays createdAt updatedAt').sort({ updatedAt: -1 }).limit(20);
-      
+      const studioGames = await StudioGame.find({ owner: user._id, status: 'public', published: true })
+        .select('title description thumbnailData plays createdAt updatedAt').sort({ updatedAt: -1 }).limit(20);
       publishedGames = studioGames.map(g => ({
-        id: g._id,
-        slug: `studio_${g._id}`,
-        title: g.title,
-        description: g.description,
-        thumbnailData: g.thumbnailData,
-        plays: g.plays,
-        createdAt: g.createdAt,
-        updatedAt: g.updatedAt
+        id: g._id, slug: `studio_${g._id}`, title: g.title, description: g.description,
+        thumbnailData: g.thumbnailData, plays: g.plays, createdAt: g.createdAt, updatedAt: g.updatedAt
       }));
     } catch (e) {}
 
-    // Check if this user is online in any game
-    let isOnline = false;
-    let currentGame = null;
+    let isOnline = false, currentGame = null;
     for (const [, room] of Object.entries(rooms)) {
       for (const [, player] of Object.entries(room.players)) {
-        if (player.username === username) {
-          isOnline = true;
-          currentGame = room.place;
-          break;
-        }
+        if (player.username === username) { isOnline = true; currentGame = room.place; break; }
       }
       if (isOnline) break;
     }
 
     res.json({
-      username: user.username,
-      avatar: user.avatar,
-      bio: user.bio,
-      urus: user.urus,
-      dailyStrikes: user.dailyStrikes,
-      gamesPlayed: user.gamesPlayed,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      publishedGames,
-      isOnline,
-      currentGame
+      username: user.username, avatar: user.avatar, bio: user.bio, urus: user.urus,
+      dailyStrikes: user.dailyStrikes, gamesPlayed: user.gamesPlayed, createdAt: user.createdAt,
+      lastLogin: user.lastLogin, publishedGames, isOnline, currentGame
     });
   } catch (e) {
     console.error('[profile]', e);
@@ -565,7 +447,7 @@ app.get('/api/studio/my-games', authMiddleware, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const games = await StudioGame.find({ owner: req.userId })
-      .select('title description thumbnailData status plays published createdAt updatedAt')
+      .select('title description thumbnailData status plays published publishedAt createdAt updatedAt')
       .sort({ updatedAt: -1 });
     res.json(games);
   } catch (e) {
@@ -616,24 +498,40 @@ app.get('/api/studio/game/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// SAVE - полное сохранение (блоки, итемы, модели, настройки)
 app.post('/api/studio/save/:id', authMiddleware, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
     if (!game) return res.status(404).json({ error: 'Game not found' });
+
     const { title, description, blocks, items, models, settings, thumbnailData } = req.body;
-    if (title) game.title = title.substring(0, 50);
-    if (description !== undefined) game.description = description.substring(0, 200);
+
+    if (title !== undefined) game.title = String(title).substring(0, 50);
+    if (description !== undefined) game.description = String(description).substring(0, 200);
     if (Array.isArray(blocks)) game.blocks = blocks;
     if (Array.isArray(items)) game.items = items;
     if (Array.isArray(models)) game.models = models;
-    if (settings && typeof settings === 'object') game.settings = { ...game.settings, ...settings };
-    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 100000);
+    if (settings && typeof settings === 'object') {
+      game.settings = settings;
+    }
+    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 200000);
+
     game.updatedAt = new Date();
-    game.markModified('settings');
-    game.markModified('models');
+
+    // Force mongoose to see changes on Mixed/Array fields
+    game.markModified('blocks');
     game.markModified('items');
+    game.markModified('models');
+    game.markModified('settings');
+
     await game.save();
+
+    // If already published & public, also update the live Game doc
+    if (game.published && game.status === 'public') {
+      await syncStudioToLiveGame(game);
+    }
+
     res.json({ success: true });
   } catch (e) {
     console.error('[Save]', e);
@@ -641,122 +539,123 @@ app.post('/api/studio/save/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PUBLISH - first time publishes; after that only meta edits
 app.post('/api/studio/publish/:id', authMiddleware, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
     const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
     if (!game) return res.status(404).json({ error: 'Game not found' });
+
     const { status, title, description, thumbnailData } = req.body;
     if (!['public', 'private'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
+    // Update meta always allowed
     if (title) game.title = title.substring(0, 50);
     if (description !== undefined) game.description = description.substring(0, 200);
-    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 100000);
+    if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 200000);
     game.status = status;
-    game.published = true;
+
+    if (!game.published) {
+      // First publish
+      game.published = true;
+      game.publishedAt = new Date();
+    }
+
     game.updatedAt = new Date();
+    game.markModified('settings');
     await game.save();
 
     if (status === 'public') {
-      const slug = `studio_${game._id}`;
-      const existing = await Game.findOne({ slug });
-
-      const gameItems = Array.isArray(game.items) ? game.items : [];
-      const gameModels = Array.isArray(game.models) ? game.models : [];
-      const gameSettings = game.settings || {};
-
-      const spawnItems = gameItems.filter(i => i && i.giveOnStart);
-      const collectibleItems = gameItems.filter(i => i && (i.collectOnTouch !== false));
-
-      const gameConfig = {
-        gravity: gameSettings.gravity || 0.6,
-        maxFallSpeed: 12,
-        playerSpeed: gameSettings.playerSpeed || 4,
-        jumpForce: gameSettings.jumpForce || -12,
-        spawnX: gameSettings.spawnX || 100,
-        spawnY: gameSettings.spawnY || 400,
-        platforms: (Array.isArray(game.blocks) ? game.blocks : []).map(b => ({
-          x: b.x, y: b.y, w: b.w, h: b.h, color: b.color,
-          opacity: b.opacity, text: b.text, textFont: b.textFont,
-          textSize: b.textSize, textColor: b.textColor
-        })),
-        checkpoints: [],
-        items: {},
-        spawnItems: spawnItems.map(i => ({
-          type: i.type,
-          properties: i.properties || {}
-        })),
-        collectibleItems: collectibleItems.filter(i => !i.giveOnStart).map(i => ({
-          type: i.type,
-          x: i.x,
-          y: i.y,
-          properties: i.properties || {},
-          collectOnTouch: i.collectOnTouch !== false
-        })),
-        models: gameModels.map(m => ({
-          id: m.id,
-          type: m.type,
-          x: m.x,
-          y: m.y,
-          w: m.w || 40,
-          h: m.h || 80,
-          properties: m.properties || {}
-        })),
-        settings: gameSettings
-      };
-
-      // Build items config for inventory system
-      gameItems.forEach(i => {
-        if (!i) return;
-        if (!gameConfig.items[i.type]) {
-          const asset = ASSET_STORE.find(a => a.id === i.type);
-          gameConfig.items[i.type] = { name: asset ? asset.name : i.type, ...(i.properties || {}) };
-        }
-      });
-
-      const thumbStyle = game.thumbnailData ? 'custom' : 'default';
-
-      if (existing) {
-        existing.name = game.title;
-        existing.description = game.description || `by ${game.ownerUsername}`;
-        existing.config = gameConfig;
-        existing.updatedAt = new Date();
-        existing.status = 'active';
-        existing.thumbnail = {
-          style: thumbStyle,
-          label: game.title.toUpperCase(),
-          sublabel: `by ${game.ownerUsername}`,
-          customImage: game.thumbnailData || ''
-        };
-        existing.markModified('config');
-        await existing.save();
-      } else {
-        await new Game({
-          slug, name: game.title,
-          description: game.description || `by ${game.ownerUsername}`,
-          type: 'platformer', status: 'active',
-          thumbnail: {
-            style: thumbStyle,
-            label: game.title.toUpperCase(),
-            sublabel: `by ${game.ownerUsername}`,
-            customImage: game.thumbnailData || ''
-          },
-          config: gameConfig, maxPlayers: 20,
-          order: 100 + Math.floor(Math.random() * 900)
-        }).save();
-      }
-      clearPlaceCache(slug);
+      await syncStudioToLiveGame(game);
     } else {
+      // Private - remove from live games
       await Game.deleteOne({ slug: `studio_${game._id}` });
       clearPlaceCache(`studio_${game._id}`);
     }
 
-    res.json({ success: true, status: game.status });
+    res.json({ success: true, status: game.status, published: game.published });
   } catch (e) {
     console.error('[Publish]', e);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Helper: sync studio game data to live Game collection
+async function syncStudioToLiveGame(game) {
+  const slug = `studio_${game._id}`;
+  const existing = await Game.findOne({ slug });
+
+  const gameItems = Array.isArray(game.items) ? game.items : [];
+  const gameModels = Array.isArray(game.models) ? game.models : [];
+  const gameSettings = game.settings || {};
+
+  const spawnItems = gameItems.filter(i => i && i.giveOnStart);
+  const collectibleItems = gameItems.filter(i => i && (i.collectOnTouch !== false) && !i.giveOnStart);
+
+  const gameConfig = {
+    gravity: gameSettings.gravity || 0.6,
+    maxFallSpeed: 12,
+    playerSpeed: gameSettings.playerSpeed || 4,
+    jumpForce: gameSettings.jumpForce || -12,
+    spawnX: gameSettings.spawnX || 100,
+    spawnY: gameSettings.spawnY || 400,
+    platforms: (Array.isArray(game.blocks) ? game.blocks : []).map(b => ({
+      x: b.x, y: b.y, w: b.w, h: b.h, color: b.color,
+      opacity: b.opacity, text: b.text, textFont: b.textFont,
+      textSize: b.textSize, textColor: b.textColor
+    })),
+    checkpoints: [],
+    items: {},
+    spawnItems: spawnItems.map(i => ({ type: i.type, properties: i.properties || {} })),
+    collectibleItems: collectibleItems.map(i => ({
+      type: i.type, x: i.x, y: i.y,
+      properties: i.properties || {}, collectOnTouch: i.collectOnTouch !== false
+    })),
+    models: gameModels.map(m => ({
+      id: m.id, type: m.type, x: m.x, y: m.y,
+      w: m.w || 40, h: m.h || 80, properties: m.properties || {}
+    })),
+    settings: gameSettings
+  };
+
+  gameItems.forEach(i => {
+    if (!i) return;
+    if (!gameConfig.items[i.type]) {
+      const asset = ASSET_STORE.find(a => a.id === i.type);
+      gameConfig.items[i.type] = { name: asset ? asset.name : i.type, ...(i.properties || {}) };
+    }
+  });
+
+  const thumbStyle = game.thumbnailData ? 'custom' : 'default';
+  const thumbData = {
+    style: thumbStyle,
+    label: game.title.toUpperCase(),
+    sublabel: `by ${game.ownerUsername}`,
+    customImage: game.thumbnailData || ''
+  };
+
+  if (existing) {
+    existing.name = game.title;
+    existing.description = game.description || `by ${game.ownerUsername}`;
+    existing.config = gameConfig;
+    existing.updatedAt = new Date();
+    existing.status = 'active';
+    existing.thumbnail = thumbData;
+    existing.markModified('config');
+    existing.markModified('thumbnail');
+    await existing.save();
+  } else {
+    await new Game({
+      slug, name: game.title,
+      description: game.description || `by ${game.ownerUsername}`,
+      type: 'platformer', status: 'active',
+      thumbnail: thumbData, config: gameConfig, maxPlayers: 20,
+      order: 100 + Math.floor(Math.random() * 900)
+    }).save();
+  }
+
+  clearPlaceCache(slug);
+}
 
 app.delete('/api/studio/game/:id', authMiddleware, async (req, res) => {
   try {
@@ -780,8 +679,7 @@ const STUDIO_TARGET = Date.UTC(2026, 1, 14, 9, 25, 30, 0);
 app.get('/api/time', (req, res) => {
   res.json({
     remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
-    serverNow: Date.now(),
-    offsetMs: timerOffsetMs
+    serverNow: Date.now(), offsetMs: timerOffsetMs
   });
 });
 
@@ -794,31 +692,21 @@ async function getPlaceConfig(slug) {
   const game = await Game.findOne({ slug, status: 'active' });
   if (!game) return null;
   const pd = {
-    name: game.name,
-    type: game.type,
-    gravity: game.config.gravity,
-    maxFallSpeed: game.config.maxFallSpeed,
-    playerSpeed: game.config.playerSpeed,
-    jumpForce: game.config.jumpForce,
-    spawnX: game.config.spawnX,
-    spawnY: game.config.spawnY,
-    platforms: game.config.platforms || [],
-    checkpoints: game.config.checkpoints || [],
-    items: game.config.items || {},
-    maxPlayers: game.maxPlayers,
-    spawnItems: game.config.spawnItems || [],
-    collectibleItems: game.config.collectibleItems || [],
-    models: game.config.models || [],
-    settings: game.config.settings || {},
+    name: game.name, type: game.type,
+    gravity: game.config.gravity, maxFallSpeed: game.config.maxFallSpeed,
+    playerSpeed: game.config.playerSpeed, jumpForce: game.config.jumpForce,
+    spawnX: game.config.spawnX, spawnY: game.config.spawnY,
+    platforms: game.config.platforms || [], checkpoints: game.config.checkpoints || [],
+    items: game.config.items || {}, maxPlayers: game.maxPlayers,
+    spawnItems: game.config.spawnItems || [], collectibleItems: game.config.collectibleItems || [],
+    models: game.config.models || [], settings: game.config.settings || {},
     blocks: game.config.platforms || []
   };
   PLACES_CACHE[slug] = pd;
   return pd;
 }
 
-function clearPlaceCache(slug) {
-  delete PLACES_CACHE[slug];
-}
+function clearPlaceCache(slug) { delete PLACES_CACHE[slug]; }
 
 // ==================== MULTIPLAYER ====================
 
@@ -849,19 +737,12 @@ io.on('connection', (socket) => {
 
   socket.on('join-game', async (data) => {
     try {
-      if (mongoose.connection.readyState !== 1) {
-        return socket.emit('error-msg', 'Server is starting up, please retry in a moment');
-      }
-
+      if (mongoose.connection.readyState !== 1) return socket.emit('error-msg', 'Server is starting up');
       const { token, place } = data;
       if (!token || !place) return;
 
       let decoded;
-      try {
-        decoded = jwt.verify(token, JWT_SECRET);
-      } catch (e) {
-        return socket.emit('error-msg', 'Invalid token');
-      }
+      try { decoded = jwt.verify(token, JWT_SECRET); } catch (e) { return socket.emit('error-msg', 'Invalid token'); }
 
       const userId = decoded.userId;
       const user = await User.findById(userId).select('-password');
@@ -892,8 +773,6 @@ io.on('connection', (socket) => {
       playerRooms[socket.id] = roomId;
 
       let inventory = [null, null, null, null];
-
-      // Give spawn items
       if (placeData.spawnItems && Array.isArray(placeData.spawnItems) && placeData.spawnItems.length > 0) {
         placeData.spawnItems.forEach((si, idx) => {
           if (idx < 4 && si) {
@@ -902,8 +781,6 @@ io.on('connection', (socket) => {
           }
         });
       }
-
-      // Fallback for PVP type
       if (placeData.type === 'pvp' && placeData.items?.sword && !inventory.some(i => i && i.id === 'sword')) {
         const emptySlot = inventory.indexOf(null);
         if (emptySlot !== -1) {
@@ -926,11 +803,7 @@ io.on('connection', (socket) => {
       };
 
       rooms[roomId].players[socket.id] = playerData;
-
-      socket.emit('game-init', {
-        place: placeData, placeName: place, player: playerData,
-        players: rooms[roomId].players, roomId
-      });
+      socket.emit('game-init', { place: placeData, placeName: place, player: playerData, players: rooms[roomId].players, roomId });
       socket.to(roomId).emit('player-joined', playerData);
     } catch (e) {
       console.error('[join-game]', e);
@@ -988,7 +861,6 @@ io.on('connection', (socket) => {
       if (dist < (item.range || 50) + 30 && inFront && Math.abs(dy) < 40) {
         target.hp -= (item.damage || 20);
         io.to(id).emit('player-hit', { hp: target.hp, knockX: atk.direction * 8, knockY: -5 });
-
         if (target.hp <= 0) {
           target.hp = target.maxHp;
           if (placeData) { target.x = placeData.spawnX; target.y = placeData.spawnY; }
@@ -998,7 +870,6 @@ io.on('connection', (socket) => {
         }
       }
     }
-
     socket.to(roomId).emit('player-attack', { id: socket.id });
   });
 
@@ -1033,12 +904,9 @@ io.on('connection', (socket) => {
     const roomId = playerRooms[socket.id];
     if (!roomId || !rooms[roomId]) return;
     const p = rooms[roomId].players[socket.id];
-    if (p && typeof data.slot === 'number' && data.slot >= 0 && data.slot < 4) {
-      p.activeSlot = data.slot;
-    }
+    if (p && typeof data.slot === 'number' && data.slot >= 0 && data.slot < 4) p.activeSlot = data.slot;
   });
 
-  // Studio timer
   socket.on('studio-join', async (data) => {
     try {
       if (!data.token) return;
@@ -1062,7 +930,6 @@ io.on('connection', (socket) => {
     if (!action || amount === undefined) return;
     const ms = parseInt(amount);
     if (isNaN(ms)) return;
-
     switch (action) {
       case 'add-hours': timerOffsetMs += ms * 3600000; break;
       case 'sub-hours': timerOffsetMs -= ms * 3600000; break;
@@ -1072,20 +939,14 @@ io.on('connection', (socket) => {
       case 'sub-seconds': timerOffsetMs -= ms * 1000; break;
       case 'reset': timerOffsetMs = 0; break;
     }
-
     io.to('studio-room').emit('studio-timer-update', {
-      offsetMs: timerOffsetMs,
-      remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
-      adjustedBy: socket._studioUser,
-      action,
-      amount: ms
+      offsetMs: timerOffsetMs, remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
+      adjustedBy: socket._studioUser, action, amount: ms
     });
   });
 
   socket.on('disconnect', () => {
-    if (socket._userId && activeUserSessions[socket._userId] === socket.id) {
-      delete activeUserSessions[socket._userId];
-    }
+    if (socket._userId && activeUserSessions[socket._userId] === socket.id) delete activeUserSessions[socket._userId];
     removePlayerFromAllRooms(socket.id);
   });
 });
@@ -1095,28 +956,18 @@ io.on('connection', (socket) => {
 async function start() {
   try {
     await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-      retryWrites: true
+      serverSelectionTimeoutMS: 15000, socketTimeoutMS: 45000,
+      maxPoolSize: 10, retryWrites: true
     });
     console.log('[DB] MongoDB connected');
-
-    server.listen(PORT, () => {
-      console.log(`[Tublox3] http://localhost:${PORT}`);
-    });
+    server.listen(PORT, () => { console.log(`[Tublox3] http://localhost:${PORT}`); });
   } catch (err) {
     console.error('[DB] Failed to connect to MongoDB:', err.message);
     process.exit(1);
   }
 }
 
-mongoose.connection.on('disconnected', () => {
-  console.warn('[DB] MongoDB disconnected, attempting reconnect...');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('[DB] MongoDB runtime error:', err.message);
-});
+mongoose.connection.on('disconnected', () => { console.warn('[DB] MongoDB disconnected'); });
+mongoose.connection.on('error', (err) => { console.error('[DB] MongoDB error:', err.message); });
 
 start();

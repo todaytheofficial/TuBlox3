@@ -28,14 +28,14 @@
         <button class="topbar-tool" data-tool="block" title="Block (B)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
         </button>
-        <button class="topbar-tool" data-tool="item" title="Item (I)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </button>
         <button class="topbar-tool" data-tool="move" title="Move (M)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
         </button>
       </div>
       <div class="topbar-right">
+        <button class="topbar-btn" id="btn-explorer-toggle" title="Explorer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        </button>
         <button class="topbar-btn" id="btn-items-panel" title="Asset Store">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-4l-2-3H10L8 7H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M12 11v6M9 14h6"/></svg>
         </button>
@@ -48,7 +48,7 @@
         </button>
         <button class="topbar-btn topbar-btn-publish" id="btn-publish" title="Publish">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-          <span class="topbar-btn-label">Publish</span>
+          <span class="topbar-btn-label" id="publish-btn-label">Publish</span>
         </button>
       </div>
     </div>
@@ -63,11 +63,11 @@
       <button class="mob-tool" data-tool="block" title="Block">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
       </button>
-      <button class="mob-tool" data-tool="item" title="Item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      </button>
       <button class="mob-tool" data-tool="move" title="Move">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      </button>
+      <button class="mob-tool mob-action" id="mob-explorer" title="Explorer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
       </button>
       <button class="mob-tool mob-action" id="mob-save" title="Save">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -77,7 +77,84 @@
       </button>
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- EXPLORER PANEL (like Roblox Studio) -->
+    <div id="explorer-panel" class="explorer-panel" style="display:none">
+      <div class="rp-header">
+        <h3>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+          Explorer
+        </h3>
+        <button class="rp-close" id="explorer-close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Explorer tree -->
+      <div class="explorer-tree" id="explorer-tree">
+        <!-- Workspace root -->
+        <div class="explorer-node explorer-root" id="explorer-root">
+          <div class="explorer-node-header" data-expand="workspace">
+            <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" style="margin-right:4px"><circle cx="12" cy="12" r="10"/></svg>
+            <span>Workspace</span>
+          </div>
+          <div class="explorer-children" id="explorer-workspace-children">
+
+            <!-- Settings node -->
+            <div class="explorer-node">
+              <div class="explorer-node-header explorer-leaf" id="explorer-settings-node">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" style="margin-left:12px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4"/></svg>
+                <span>Settings</span>
+              </div>
+            </div>
+
+            <!-- Spawn node -->
+            <div class="explorer-node">
+              <div class="explorer-node-header explorer-leaf" id="explorer-spawn-node">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" style="margin-left:12px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>SpawnPoint</span>
+              </div>
+            </div>
+
+            <!-- Blocks folder -->
+            <div class="explorer-node">
+              <div class="explorer-node-header" data-expand="blocks">
+                <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" style="margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                <span>Blocks</span>
+                <span class="explorer-count" id="explorer-blocks-count">0</span>
+              </div>
+              <div class="explorer-children" id="explorer-blocks-list" style="display:none"></div>
+            </div>
+
+            <!-- Items folder -->
+            <div class="explorer-node">
+              <div class="explorer-node-header" data-expand="items">
+                <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" style="margin-right:4px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>Items</span>
+                <span class="explorer-count" id="explorer-items-count">0</span>
+              </div>
+              <div class="explorer-children" id="explorer-items-list" style="display:none"></div>
+            </div>
+
+            <!-- Models folder -->
+            <div class="explorer-node">
+              <div class="explorer-node-header" data-expand="models">
+                <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" style="margin-right:4px"><rect x="2" y="6" width="20" height="14" rx="2"/></svg>
+                <span>Models</span>
+                <span class="explorer-count" id="explorer-models-count">0</span>
+              </div>
+              <div class="explorer-children" id="explorer-models-list" style="display:none"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL (Properties) -->
     <div id="right-panel" class="right-panel" style="display:none">
       <div class="rp-header">
         <h3 id="rp-title">Properties</h3>
@@ -134,10 +211,7 @@
             <label for="prop-spawn">Set as Spawn Point</label>
           </div>
         </div>
-        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-block">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          Delete Block
-        </button>
+        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-block">Delete Block</button>
       </div>
 
       <!-- Item properties -->
@@ -165,10 +239,7 @@
           </div>
         </div>
         <div id="item-custom-props" class="rp-section"></div>
-        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-item">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          Delete Item
-        </button>
+        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-item">Delete Item</button>
       </div>
 
       <!-- Model properties -->
@@ -192,20 +263,14 @@
           </div>
         </div>
         <div id="model-custom-props" class="rp-section"></div>
-        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-model">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          Delete Model
-        </button>
+        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-model">Delete Model</button>
       </div>
     </div>
 
     <!-- ITEMS PANEL / ASSET STORE -->
     <div id="items-panel" class="items-panel" style="display:none">
       <div class="rp-header">
-        <h3>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M20 7h-4l-2-3H10L8 7H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M12 11v6M9 14h6"/></svg>
-          Asset Store
-        </h3>
+        <h3>Asset Store</h3>
         <button class="rp-close" id="items-panel-close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -219,29 +284,12 @@
         <button class="filter-btn" data-cat="model">Models</button>
       </div>
       <div id="asset-list" class="asset-list"></div>
-      <div class="items-placed">
-        <h4>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
-          Placed Items (<span id="placed-count">0</span>)
-        </h4>
-        <div id="placed-list" class="placed-list"></div>
-      </div>
-      <div class="items-placed">
-        <h4>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M12 6V4"/></svg>
-          Placed Models (<span id="placed-model-count">0</span>)
-        </h4>
-        <div id="placed-model-list" class="placed-list"></div>
-      </div>
     </div>
 
     <!-- SETTINGS MODAL -->
     <div id="settings-modal" class="modal-overlay" style="display:none">
       <div class="modal-panel modal-wide" style="max-height:85vh;overflow-y:auto">
-        <h3>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-          Game Settings
-        </h3>
+        <h3>Game Settings</h3>
         <div class="rp-section"><label>Title</label><input type="text" id="set-title" class="rp-input" maxlength="50"></div>
         <div class="rp-section"><label>Description</label><textarea id="set-desc" class="rp-textarea" maxlength="200" rows="3"></textarea></div>
         <div class="rp-section"><label>Background Color</label><input type="color" id="set-bg" class="rp-color"></div>
@@ -261,17 +309,10 @@
           </div>
         </div>
 
-        <!-- FOG -->
         <div class="settings-divider"></div>
-        <h4 class="settings-section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M8 2c0 0-4 6-4 10a4 4 0 008 0C12 8 8 2 8 2z"/><path d="M16 6c0 0-2 3-2 5a2 2 0 004 0c0-2-2-5-2-5z"/></svg>
-          Fog &amp; Atmosphere
-        </h4>
+        <h4 class="settings-section-title">Fog</h4>
         <div class="rp-section">
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-fog-enabled">
-            <label for="set-fog-enabled">Enable Fog</label>
-          </div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-fog-enabled"><label for="set-fog-enabled">Enable Fog</label></div>
         </div>
         <div id="fog-settings" style="display:none">
           <div class="rp-section">
@@ -282,34 +323,27 @@
             </div>
           </div>
           <div class="rp-section">
-            <label>Fog Density <span class="rp-slider-val" id="set-fog-density-val">0.5</span></label>
+            <label>Density <span class="rp-slider-val" id="set-fog-density-val">0.5</span></label>
             <input type="range" id="set-fog-density" min="0" max="1" step="0.05" value="0.5" class="rp-slider">
           </div>
           <div class="rp-section">
-            <label>Fog Start Distance <span class="rp-slider-val" id="set-fog-start-val">100</span></label>
+            <label>Start <span class="rp-slider-val" id="set-fog-start-val">100</span></label>
             <input type="range" id="set-fog-start" min="0" max="500" step="10" value="100" class="rp-slider">
           </div>
           <div class="rp-section">
-            <label>Fog End Distance <span class="rp-slider-val" id="set-fog-end-val">400</span></label>
+            <label>End <span class="rp-slider-val" id="set-fog-end-val">400</span></label>
             <input type="range" id="set-fog-end" min="50" max="1000" step="10" value="400" class="rp-slider">
           </div>
         </div>
 
-        <!-- DARKNESS -->
         <div class="settings-divider"></div>
-        <h4 class="settings-section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          Darkness &amp; Lighting
-        </h4>
+        <h4 class="settings-section-title">Darkness</h4>
         <div class="rp-section">
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-darkness">
-            <label for="set-darkness">Enable Darkness (requires Flashlight)</label>
-          </div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-darkness"><label for="set-darkness">Enable Darkness</label></div>
         </div>
         <div id="darkness-settings" style="display:none">
           <div class="rp-section">
-            <label>Ambient Light <span class="rp-slider-val" id="set-ambient-val">0.02</span></label>
+            <label>Ambient <span class="rp-slider-val" id="set-ambient-val">0.02</span></label>
             <input type="range" id="set-ambient" min="0" max="0.5" step="0.01" value="0.02" class="rp-slider">
           </div>
           <div class="rp-section">
@@ -320,87 +354,55 @@
             </div>
           </div>
           <div class="rp-section">
-            <label>Flashlight Spread <span class="rp-slider-val" id="set-fl-spread-val">0.45</span></label>
+            <label>Spread <span class="rp-slider-val" id="set-fl-spread-val">0.45</span></label>
             <input type="range" id="set-fl-spread" min="0.1" max="1.5" step="0.05" value="0.45" class="rp-slider">
           </div>
           <div class="rp-section">
             <label>Battery</label>
             <div class="rp-row">
               <div class="rp-field"><span>Max</span><input type="number" id="set-bat-max" value="100"></div>
-              <div class="rp-field"><span>Drain/s</span><input type="number" id="set-bat-drain" step="0.1" value="0.8"></div>
-              <div class="rp-field"><span>Regen/s</span><input type="number" id="set-bat-regen" step="0.1" value="0.3"></div>
+              <div class="rp-field"><span>Drain</span><input type="number" id="set-bat-drain" step="0.1" value="0.8"></div>
+              <div class="rp-field"><span>Regen</span><input type="number" id="set-bat-regen" step="0.1" value="0.3"></div>
             </div>
           </div>
           <div class="rp-section">
-            <label>Flicker Chance <span class="rp-slider-val" id="set-flicker-val">0.003</span></label>
+            <label>Flicker <span class="rp-slider-val" id="set-flicker-val">0.003</span></label>
             <input type="range" id="set-flicker" min="0" max="0.05" step="0.001" value="0.003" class="rp-slider">
           </div>
         </div>
 
-        <!-- EFFECTS -->
         <div class="settings-divider"></div>
-        <h4 class="settings-section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-          Visual Effects
-        </h4>
+        <h4 class="settings-section-title">Effects</h4>
         <div class="rp-section">
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-particles">
-            <label for="set-particles">Ambient Particles (dust/ash)</label>
-          </div>
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-breathing">
-            <label for="set-breathing">Breathing Effect (screen pulse)</label>
-          </div>
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-footstep">
-            <label for="set-footstep">Camera Shake on Run</label>
-          </div>
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-vignette">
-            <label for="set-vignette">Vignette (dark edges)</label>
-          </div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-particles"><label for="set-particles">Particles</label></div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-breathing"><label for="set-breathing">Breathing</label></div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-footstep"><label for="set-footstep">Camera Shake</label></div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-vignette"><label for="set-vignette">Vignette</label></div>
         </div>
         <div id="vignette-settings" style="display:none">
           <div class="rp-section">
-            <label>Vignette Intensity <span class="rp-slider-val" id="set-vignette-val">0.3</span></label>
+            <label>Intensity <span class="rp-slider-val" id="set-vignette-val">0.3</span></label>
             <input type="range" id="set-vignette-intensity" min="0" max="1" step="0.05" value="0.3" class="rp-slider">
           </div>
-          <div class="rp-section">
-            <label>Vignette Color</label>
-            <input type="color" id="set-vignette-color" class="rp-color" value="#000000">
-          </div>
+          <div class="rp-section"><label>Color</label><input type="color" id="set-vignette-color" class="rp-color" value="#000000"></div>
         </div>
 
-        <!-- COLOR GRADING -->
         <div class="settings-divider"></div>
-        <h4 class="settings-section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/><circle cx="8.5" cy="15.5" r="2.5"/></svg>
-          Color &amp; Tint
-        </h4>
+        <h4 class="settings-section-title">Tint</h4>
         <div class="rp-section">
-          <div class="rp-checkbox">
-            <input type="checkbox" id="set-tint-enabled">
-            <label for="set-tint-enabled">Enable Screen Tint</label>
-          </div>
+          <div class="rp-checkbox"><input type="checkbox" id="set-tint-enabled"><label for="set-tint-enabled">Screen Tint</label></div>
         </div>
         <div id="tint-settings" style="display:none">
+          <div class="rp-section"><label>Color</label><input type="color" id="set-tint-color" class="rp-color" value="#000000"></div>
           <div class="rp-section">
-            <label>Tint Color</label>
-            <input type="color" id="set-tint-color" class="rp-color" value="#000000">
-          </div>
-          <div class="rp-section">
-            <label>Tint Opacity <span class="rp-slider-val" id="set-tint-opacity-val">0.1</span></label>
+            <label>Opacity <span class="rp-slider-val" id="set-tint-opacity-val">0.1</span></label>
             <input type="range" id="set-tint-opacity" min="0" max="0.5" step="0.01" value="0.1" class="rp-slider">
           </div>
         </div>
 
         <div class="modal-buttons">
           <button class="btn btn-outline-light" id="btn-settings-cancel">Cancel</button>
-          <button class="btn btn-white" id="btn-settings-save">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
-            Apply
-          </button>
+          <button class="btn btn-white" id="btn-settings-save">Apply</button>
         </div>
       </div>
     </div>
@@ -408,10 +410,7 @@
     <!-- PUBLISH MODAL -->
     <div id="publish-modal" class="modal-overlay" style="display:none">
       <div class="modal-panel modal-wide">
-        <h3>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-          Publish TuGame
-        </h3>
+        <h3 id="publish-modal-title">Publish TuGame</h3>
         <div class="rp-section"><label>Game Title</label><input type="text" id="pub-title" class="rp-input" maxlength="50"></div>
         <div class="rp-section"><label>Description</label><textarea id="pub-desc" class="rp-textarea" maxlength="200" rows="2"></textarea></div>
         <div class="rp-section">
@@ -421,7 +420,7 @@
             <div class="pub-thumb-actions">
               <button class="btn btn-outline-light btn-sm" id="pub-thumb-auto">Auto Generate</button>
               <label class="btn btn-outline-light btn-sm">
-                Upload Image
+                Upload
                 <input type="file" id="pub-thumb-upload" accept="image/*" style="display:none">
               </label>
             </div>

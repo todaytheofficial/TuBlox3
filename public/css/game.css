@@ -15,7 +15,7 @@ body {
 
 #app { width: 100%; height: 100%; position: relative; }
 
-/* LOADING */
+/* ==================== LOADING ==================== */
 #loading-screen {
   position: fixed;
   top: 0; left: 0;
@@ -69,7 +69,7 @@ body {
 
 #loader-text { color: #444; font-size: 13px; }
 
-/* CANVAS */
+/* ==================== CANVAS ==================== */
 #game-canvas {
   display: block;
   width: 100%;
@@ -77,7 +77,7 @@ body {
   touch-action: none;
 }
 
-/* HUD */
+/* ==================== HUD ==================== */
 #hud {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -118,7 +118,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* CHAT */
+/* ==================== CHAT ==================== */
 #chat-container {
   position: fixed;
   bottom: 48px; left: 16px;
@@ -178,8 +178,63 @@ body {
 
 #chat-input:focus { border-color: #666; }
 
-/* ==================== MOBILE CONTROLS ==================== */
+/* ==================== NOTE OVERLAY ==================== */
+#note-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: noteIn 0.2s ease;
+}
 
+@keyframes noteIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.note-panel {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 32px 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+}
+
+.note-panel::before {
+  content: '📝';
+  font-size: 28px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.note-panel p {
+  font-size: 16px;
+  color: #CCBB88;
+  font-style: italic;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.note-hint {
+  display: block;
+  margin-top: 16px;
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ==================== MOBILE CONTROLS ==================== */
 #mobile-controls {
   position: fixed;
   top: 0; left: 0;
@@ -188,7 +243,7 @@ body {
   z-index: 15;
 }
 
-/* JOYSTICK ZONE */
+/* JOYSTICK */
 #mobile-joystick-zone {
   position: absolute;
   left: 0;
@@ -200,8 +255,8 @@ body {
 
 #mobile-joystick {
   position: absolute;
-  left: 50px;
-  bottom: 60px;
+  left: 40px;
+  bottom: 50px;
   width: 100px;
   height: 100px;
   border-radius: 50%;
@@ -235,21 +290,43 @@ body {
   border-color: rgba(255,255,255,0.5);
 }
 
-/* BUTTONS ZONE */
-#mobile-buttons-zone {
+/* MAIN ACTION BUTTONS — right bottom corner */
+#mobile-actions-main {
   position: absolute;
-  right: 16px;
-  bottom: 20px;
+  right: 20px;
+  bottom: 70px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: 14px;
+  align-items: flex-end;
   pointer-events: auto;
 }
 
+/* SECONDARY BUTTONS — right side, above main */
+#mobile-actions-side {
+  position: absolute;
+  right: 24px;
+  bottom: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* TOP RIGHT — menu & chat */
+#mobile-actions-top {
+  position: absolute;
+  right: 12px;
+  top: 48px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* BUTTON BASE */
 .mobile-btn {
-  width: 56px;
-  height: 56px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
   background: rgba(0,0,0,0.5);
@@ -265,26 +342,28 @@ body {
 
 .mobile-btn:active,
 .mobile-btn.pressed {
-  transform: scale(0.9);
+  transform: scale(0.88);
   background: rgba(255,255,255,0.15);
   border-color: rgba(255,255,255,0.4);
   color: #fff;
 }
 
+/* JUMP — large, prominent */
 .mobile-btn-jump {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   border-color: rgba(74,222,128,0.3);
   color: rgba(74,222,128,0.7);
 }
 
 .mobile-btn-jump:active,
 .mobile-btn-jump.pressed {
-  background: rgba(74,222,128,0.15);
+  background: rgba(74,222,128,0.2);
   border-color: rgba(74,222,128,0.6);
   color: #4ade80;
 }
 
+/* ATTACK — large */
 .mobile-btn-attack {
   width: 64px;
   height: 64px;
@@ -294,15 +373,35 @@ body {
 
 .mobile-btn-attack:active,
 .mobile-btn-attack.pressed {
-  background: rgba(239,68,68,0.15);
+  background: rgba(239,68,68,0.2);
   border-color: rgba(239,68,68,0.6);
   color: #ef4444;
 }
 
-/* USE / TOGGLE BUTTON */
+/* INTERACT */
+.mobile-btn-interact {
+  width: 52px;
+  height: 52px;
+  background: rgba(245,158,11,0.2) !important;
+  border-color: rgba(245,158,11,0.5) !important;
+  color: #F59E0B !important;
+  animation: interactPulse 1.5s ease infinite;
+}
+
+.mobile-btn-interact.pressed {
+  background: rgba(245,158,11,0.4) !important;
+  transform: scale(0.88);
+}
+
+@keyframes interactPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.3); }
+  50% { box-shadow: 0 0 10px 3px rgba(245,158,11,0.2); }
+}
+
+/* USE / TOGGLE */
 .mobile-btn-use {
-  width: 58px;
-  height: 58px;
+  width: 50px;
+  height: 50px;
   border-color: rgba(255,224,102,0.3);
   color: rgba(255,224,102,0.7);
 }
@@ -314,47 +413,32 @@ body {
   color: #FFE066;
 }
 
-.mobile-btn-use.item-on {
-  border-color: rgba(255,224,102,0.6);
-  color: #FFE066;
-  background: rgba(255,224,102,0.12);
-  box-shadow: 0 0 12px rgba(255,224,102,0.2);
+/* NOTE */
+.mobile-btn-note {
+  width: 50px;
+  height: 50px;
+  border-color: rgba(204,187,136,0.3);
+  color: rgba(204,187,136,0.7);
 }
 
-.mobile-btn-use.shield-mode {
-  border-color: rgba(68,136,204,0.3);
-  color: rgba(68,136,204,0.7);
+.mobile-btn-note:active,
+.mobile-btn-note.pressed {
+  background: rgba(204,187,136,0.15);
+  border-color: rgba(204,187,136,0.6);
+  color: #CCBB88;
 }
 
-.mobile-btn-use.shield-mode:active,
-.mobile-btn-use.shield-mode.pressed {
-  border-color: rgba(68,136,204,0.6);
-  color: #4488CC;
-  background: rgba(68,136,204,0.15);
-}
-
-.mobile-btn-use.shield-mode.item-on {
-  border-color: rgba(68,136,204,0.6);
-  color: #66AAEE;
-  background: rgba(68,136,204,0.12);
-  box-shadow: 0 0 12px rgba(68,136,204,0.2);
-}
-
-.mobile-btn-chat {
-  width: 48px;
-  height: 48px;
-}
-
+/* CHAT & MENU — smaller */
+.mobile-btn-chat,
 .mobile-btn-menu {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
 }
 
-/* ==================== MOBILE SLOT BAR ==================== */
-
+/* ==================== SLOT BAR ==================== */
 #mobile-slot-bar {
   position: absolute;
-  bottom: 8px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -400,26 +484,7 @@ body {
   color: #fff;
 }
 
-.mobile-slot:active {
-  transform: scale(0.92);
-}
-
-.mobile-btn-interact {
-  background: rgba(245, 158, 11, 0.25) !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
-  color: #F59E0B !important;
-  animation: interactPulse 1.5s ease infinite;
-}
-
-.mobile-btn-interact.pressed {
-  background: rgba(245, 158, 11, 0.5) !important;
-  transform: scale(0.9);
-}
-
-@keyframes interactPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
-  50% { box-shadow: 0 0 12px 4px rgba(245, 158, 11, 0.2); }
-}
+.mobile-slot:active { transform: scale(0.92); }
 
 .mobile-slot-dot {
   position: absolute;
@@ -432,7 +497,7 @@ body {
   background: rgba(255,255,255,0.4);
 }
 
-/* KICKED OVERLAY */
+/* ==================== KICKED ==================== */
 #kicked-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -468,7 +533,7 @@ body {
   margin-bottom: 24px;
 }
 
-/* ESC MENU */
+/* ==================== ESC MENU ==================== */
 .esc-menu-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -584,7 +649,7 @@ body {
 .btn-outline-light:hover { border-color: #888; color: #fff; }
 .btn-full { width: 100%; text-align: center; }
 
-/* MOBILE-SPECIFIC ADJUSTMENTS */
+/* ==================== MOBILE RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .hud-top-left { top: 12px; left: 12px; }
   .hud-place { font-size: 14px; }
@@ -593,11 +658,10 @@ body {
   #chat-container {
     bottom: 130px;
     left: 12px;
-    width: 260px;
+    width: 240px;
   }
 
-  #chat-messages { max-height: 100px; }
-
+  #chat-messages { max-height: 80px; }
   .chat-msg { font-size: 11px; padding: 3px 8px; }
 
   #chat-input {
@@ -606,13 +670,15 @@ body {
   }
 
   .esc-menu-panel { padding: 24px; }
-
   .loader-content .logo { font-size: 32px; }
   .loader-logo { width: 72px; height: 72px; }
   .loader-bar { width: 220px; }
+
+  .note-panel { padding: 24px 28px; }
+  .note-panel p { font-size: 14px; }
 }
 
-/* Hide mobile controls on desktop */
+/* Hide mobile on desktop */
 @media (hover: hover) and (pointer: fine) {
   #mobile-controls { display: none !important; }
 }
