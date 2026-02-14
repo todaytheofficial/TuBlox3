@@ -35,7 +35,11 @@
       const res = await fetch('/api/market/captcha-key');
       const data = await res.json();
       hcaptchaSiteKey = data.sitekey;
-    } catch (e) { console.error('[captcha-key]', e); }
+      console.log('[captcha] sitekey loaded:', hcaptchaSiteKey);
+    } catch (e) {
+      console.error('[captcha-key]', e);
+      setTimeout(loadCaptchaKey, 2000);
+    }
   }
 
   async function loadMarketItems() {
@@ -144,7 +148,6 @@
 
     card.addEventListener('click', () => openItemModal(item));
 
-    // Draw thumbnail
     requestAnimationFrame(() => {
       const canvas = document.getElementById(canvasId);
       if (canvas) drawItemThumbnail(canvas, item, primaryColor);
@@ -164,13 +167,11 @@
     c.fillStyle = '#080808';
     c.fillRect(0, 0, W, H);
 
-    // Subtle grid
     c.strokeStyle = '#0f0f0f';
     c.lineWidth = 0.5;
     for (let x = 0; x < W; x += 16) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
     for (let y = 0; y < H; y += 16) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
 
-    // Glow based on rarity
     const rarityGlow = {
       common: 'rgba(150,150,150,0.05)',
       uncommon: 'rgba(74,222,128,0.08)',
@@ -191,27 +192,13 @@
     const col = color || '#888';
 
     switch(item.category) {
-      case 'shirt':
-        drawShirtPreview(c, type, col);
-        break;
-      case 'pants':
-        drawPantsPreview(c, type, col);
-        break;
-      case 'face':
-        drawFacePreview(c, type);
-        break;
-      case 'hair':
-        drawHairPreview(c, type, col);
-        break;
-      case 'hat':
-        drawHatPreview(c, type, col);
-        break;
-      case 'accessory':
-        drawAccessoryPreview(c, type, col);
-        break;
-      case 'body_part':
-        drawBodyPartPreview(c, type, col);
-        break;
+      case 'shirt': drawShirtPreview(c, type, col); break;
+      case 'pants': drawPantsPreview(c, type, col); break;
+      case 'face': drawFacePreview(c, type); break;
+      case 'hair': drawHairPreview(c, type, col); break;
+      case 'hat': drawHatPreview(c, type, col); break;
+      case 'accessory': drawAccessoryPreview(c, type, col); break;
+      case 'body_part': drawBodyPartPreview(c, type, col); break;
       default:
         c.fillStyle = col;
         c.fillRect(-20, -20, 40, 40);
@@ -221,23 +208,22 @@
   }
 
   function drawShirtPreview(c, type, col) {
-    // Torso shape
     c.fillStyle = col;
     switch(type) {
       case 'hoodie':
         c.fillRect(-28, -30, 56, 55);
         c.fillStyle = darken(col, 30);
-        c.fillRect(-28, -30, 56, 10); // hood
+        c.fillRect(-28, -30, 56, 10);
         c.fillStyle = darken(col, 15);
-        c.fillRect(-8, -10, 16, 20); // pocket
+        c.fillRect(-8, -10, 16, 20);
         break;
       case 'jacket':
         c.fillRect(-28, -25, 56, 50);
         c.fillStyle = darken(col, 20);
-        c.fillRect(-2, -25, 4, 50); // zipper
+        c.fillRect(-2, -25, 4, 50);
         c.fillStyle = lighten(col, 20);
-        c.fillRect(-26, -15, 8, 20); // pocket left
-        c.fillRect(18, -15, 8, 20); // pocket right
+        c.fillRect(-26, -15, 8, 20);
+        c.fillRect(18, -15, 8, 20);
         break;
       case 'stripe_shirt':
         c.fillRect(-24, -25, 48, 45);
@@ -256,13 +242,13 @@
       case 'tank_top':
         c.fillRect(-18, -20, 36, 42);
         c.fillStyle = '#080808';
-        c.fillRect(-24, -25, 8, 15); // cut left
-        c.fillRect(16, -25, 8, 15); // cut right
+        c.fillRect(-24, -25, 8, 15);
+        c.fillRect(16, -25, 8, 15);
         break;
-      default: // basic_tee
+      default:
         c.fillRect(-24, -25, 48, 45);
         c.fillStyle = lighten(col, 15);
-        c.fillRect(-24, -25, 48, 3); // collar
+        c.fillRect(-24, -25, 48, 3);
     }
   }
 
@@ -277,7 +263,7 @@
         c.fillRect(-22, -15, 20, 50);
         c.fillRect(2, -15, 20, 50);
         c.fillStyle = darken(col, 20);
-        c.fillRect(-18, 10, 12, 10); // pocket
+        c.fillRect(-18, 10, 12, 10);
         c.fillRect(6, 10, 12, 10);
         break;
       case 'royal_legs':
@@ -294,19 +280,18 @@
         c.fillRect(-22, -15, 20, 50);
         c.fillRect(2, -15, 20, 50);
         c.fillStyle = lighten(col, 10);
-        c.fillRect(-22, -15, 44, 6); // waistband
+        c.fillRect(-22, -15, 44, 6);
         break;
-      default: // jeans
+      default:
         c.fillRect(-22, -15, 20, 50);
         c.fillRect(2, -15, 20, 50);
         c.fillStyle = lighten(col, 10);
-        c.fillRect(-20, 0, 2, 35); // seam
+        c.fillRect(-20, 0, 2, 35);
         c.fillRect(18, 0, 2, 35);
     }
   }
 
   function drawFacePreview(c, type) {
-    // Head circle
     c.fillStyle = '#ddd';
     c.beginPath();
     c.arc(0, 0, 35, 0, Math.PI * 2);
@@ -431,13 +416,13 @@
         c.beginPath();
         c.ellipse(0, -5, 22, 8, 0, Math.PI, 0);
         c.fill();
-        c.fillRect(-25, 5, 50, 4); // brim
+        c.fillRect(-25, 5, 50, 4);
         break;
       case 'top_hat':
         c.fillRect(-14, -35, 28, 35);
         c.fillRect(-22, 0, 44, 6);
         c.fillStyle = lighten(col, 20);
-        c.fillRect(-12, -10, 24, 3); // band
+        c.fillRect(-12, -10, 24, 3);
         break;
       case 'crown':
         c.fillStyle = '#FFD700';
@@ -468,8 +453,7 @@
       case 'ninja_headband':
         c.fillRect(-24, -4, 48, 10);
         c.fillStyle = lighten(col, 15);
-        c.fillRect(-24, -2, 48, 2); // stripe
-        // Tail
+        c.fillRect(-24, -2, 48, 2);
         c.fillStyle = col;
         c.beginPath();
         c.moveTo(24, -4);
@@ -497,13 +481,11 @@
       case 'wings':
         c.fillStyle = col;
         c.globalAlpha = 0.7;
-        // Left wing
         c.beginPath();
         c.moveTo(-5, 0);
         c.quadraticCurveTo(-40, -30, -35, 10);
         c.quadraticCurveTo(-30, 25, -5, 15);
         c.fill();
-        // Right wing
         c.beginPath();
         c.moveTo(5, 0);
         c.quadraticCurveTo(40, -30, 35, 10);
@@ -527,7 +509,7 @@
         c.fillRect(-20, -4, 40, 8);
         c.fillRect(-8, 4, 16, 20);
         c.fillStyle = darken(col, 15);
-        c.fillRect(-8, 18, 16, 6); // fringe
+        c.fillRect(-8, 18, 16, 6);
         break;
       case 'necklace':
         c.strokeStyle = col;
@@ -596,7 +578,6 @@
     const modal = document.getElementById('item-modal');
     modal.style.display = 'flex';
 
-    // Fill info
     document.getElementById('item-detail-name').textContent = item.name;
     document.getElementById('item-detail-desc').textContent = item.description;
     document.getElementById('item-detail-price').textContent = item.price;
@@ -605,12 +586,10 @@
     document.getElementById('item-detail-sold').textContent = item.sold || 0;
     document.getElementById('item-balance').textContent = userData ? userData.urus : 0;
 
-    // Rarity badge
     const badge = document.getElementById('item-rarity-badge');
     badge.textContent = item.rarity.toUpperCase();
     badge.className = 'item-rarity-badge rarity-' + item.rarity;
 
-    // Stock
     const stockRow = document.getElementById('item-stock-row');
     if (item.isLimited && item.stock > 0) {
       stockRow.style.display = 'flex';
@@ -619,7 +598,6 @@
       stockRow.style.display = 'none';
     }
 
-    // Colors
     const colorsSection = document.getElementById('item-colors-section');
     const colorsDiv = document.getElementById('item-color-options');
     if (item.colors && item.colors.length > 0) {
@@ -641,10 +619,8 @@
       colorsSection.style.display = 'none';
     }
 
-    // Preview
     drawItemThumbnail(document.getElementById('item-preview-canvas'), item, selectedColor);
 
-    // Buttons
     const isOwned = ownedItemIds.has(item._id);
     const isEquipped = equippedData[item.category] && String(equippedData[item.category]) === String(item._id);
 
@@ -653,7 +629,6 @@
     document.getElementById('btn-equip-item').style.display = isOwned && !isEquipped ? 'block' : 'none';
     document.getElementById('btn-unequip-item').style.display = isOwned && isEquipped ? 'block' : 'none';
 
-    // Captcha
     const captchaContainer = document.getElementById('captcha-container');
     if (!isOwned) {
       captchaContainer.style.display = 'flex';
@@ -662,7 +637,6 @@
       captchaContainer.style.display = 'none';
     }
 
-    // Clear status
     document.getElementById('item-buy-status').textContent = '';
     document.getElementById('item-buy-status').className = 'item-buy-status';
   }
@@ -670,19 +644,43 @@
   function renderCaptcha() {
     const widget = document.getElementById('hcaptcha-widget');
     widget.innerHTML = '';
-    widget.setAttribute('data-sitekey', hcaptchaSiteKey);
-    if (typeof hcaptcha !== 'undefined') {
-      try {
-        hcaptchaWidgetId = hcaptcha.render('hcaptcha-widget', {
-          sitekey: hcaptchaSiteKey,
-          theme: 'dark',
-          callback: function(token) {
-            // Token received
-          }
-        });
-      } catch (e) {
-        console.error('[hcaptcha render]', e);
+
+    if (!hcaptchaSiteKey) {
+      console.warn('[captcha] sitekey not loaded yet, retrying...');
+      setTimeout(renderCaptcha, 500);
+      return;
+    }
+
+    if (typeof hcaptcha === 'undefined') {
+      console.warn('[captcha] hcaptcha script not loaded, retrying...');
+      setTimeout(renderCaptcha, 500);
+      return;
+    }
+
+    try {
+      if (hcaptchaWidgetId !== null) {
+        try { hcaptcha.remove(hcaptchaWidgetId); } catch(e) {}
+        hcaptchaWidgetId = null;
       }
+
+      hcaptchaWidgetId = hcaptcha.render(widget, {
+        sitekey: hcaptchaSiteKey,
+        theme: 'dark',
+        size: 'normal',
+        callback: function(token) {
+          console.log('[captcha] token received');
+        },
+        'expired-callback': function() {
+          console.log('[captcha] token expired');
+        },
+        'error-callback': function(err) {
+          console.error('[captcha] error', err);
+        }
+      });
+      console.log('[captcha] rendered, widgetId:', hcaptchaWidgetId);
+    } catch (e) {
+      console.error('[hcaptcha render]', e);
+      setTimeout(renderCaptcha, 1000);
     }
   }
 
@@ -692,20 +690,20 @@
     if (!selectedItem) return;
     const statusEl = document.getElementById('item-buy-status');
 
-    // Get captcha token
     let captchaToken = '';
     if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
-      try { captchaToken = hcaptcha.getResponse(hcaptchaWidgetId); } catch (e) {}
+      try {
+        captchaToken = hcaptcha.getResponse(hcaptchaWidgetId);
+      } catch (e) {
+        console.error('[captcha getResponse]', e);
+      }
     }
 
-    if (!captchaToken && hcaptchaSiteKey !== '10000000-ffff-ffff-ffff-000000000000') {
+    if (!captchaToken) {
       statusEl.className = 'item-buy-status error';
-      statusEl.textContent = 'Please complete the captcha';
+      statusEl.textContent = 'Please complete the captcha first';
       return;
     }
-
-    // Use test token in dev mode
-    if (!captchaToken) captchaToken = 'test-token';
 
     statusEl.className = 'item-buy-status';
     statusEl.textContent = 'Processing...';
@@ -726,13 +724,11 @@
         document.getElementById('item-balance').textContent = data.newBalance;
         ownedItemIds.add(selectedItem._id);
 
-        // Update buttons
         document.getElementById('btn-buy-item').style.display = 'none';
         document.getElementById('btn-owned-item').style.display = 'block';
         document.getElementById('btn-equip-item').style.display = 'block';
         document.getElementById('captcha-container').style.display = 'none';
 
-        // Refresh lists
         loadMarketItems();
         loadInventory();
       } else {
@@ -744,7 +740,6 @@
       statusEl.textContent = 'Network error';
     }
 
-    // Reset captcha
     if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
       try { hcaptcha.reset(hcaptchaWidgetId); } catch (e) {}
     }
@@ -863,6 +858,7 @@
 
   function lighten(hex, amount) {
     hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
     const r = Math.min(255, parseInt(hex.substring(0,2),16) + amount);
     const g = Math.min(255, parseInt(hex.substring(2,4),16) + amount);
     const b = Math.min(255, parseInt(hex.substring(4,6),16) + amount);
@@ -871,6 +867,7 @@
 
   function darken(hex, amount) {
     hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
     const r = Math.max(0, parseInt(hex.substring(0,2),16) - amount);
     const g = Math.max(0, parseInt(hex.substring(2,4),16) - amount);
     const b = Math.max(0, parseInt(hex.substring(4,6),16) - amount);
@@ -889,7 +886,7 @@
   async function init() {
     await checkAuth();
     await loadCaptchaKey();
-    await loadInventory(); // Load owned items first for badges
+    await loadInventory();
     await loadMarketItems();
   }
 
