@@ -11,7 +11,7 @@ a { text-decoration: none; color: inherit; }
 
 #app { display: flex; min-height: 100vh; }
 
-/* SIDEBAR */
+/* ==================== SIDEBAR ==================== */
 #sidebar {
   width: 240px;
   min-height: 100vh;
@@ -60,7 +60,6 @@ a { text-decoration: none; color: inherit; }
 .nav-item.active { color: #fff; background: rgba(255,255,255,0.04); border-right: 2px solid #fff; }
 .nav-svg { flex-shrink: 0; }
 
-/* SIDEBAR CURRENCY */
 .sidebar-currency {
   padding: 12px 16px;
   border-top: 1px solid #151515;
@@ -91,7 +90,6 @@ a { text-decoration: none; color: inherit; }
   color: #fff;
 }
 
-/* SIDEBAR BOTTOM */
 .sidebar-bottom { padding: 16px; border-top: 1px solid #151515; }
 
 .user-card {
@@ -125,14 +123,94 @@ a { text-decoration: none; color: inherit; }
 
 .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
 
-/* MAIN */
+/* ==================== MAIN ==================== */
 #main {
   flex: 1;
   margin-left: 240px;
   padding: 32px;
 }
 
-/* PROFILE HEADER */
+/* ==================== LOADING ==================== */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 120px 20px;
+  color: #555;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #1a1a1a;
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==================== ERROR ==================== */
+.page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 120px 20px;
+  text-align: center;
+}
+
+.page-error h2 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ef4444;
+}
+
+.page-error p {
+  font-size: 14px;
+  color: #555;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.btn-back:hover {
+  background: #1a1a1a;
+  border-color: #333;
+}
+
+/* ==================== VIEWING BADGE ==================== */
+.viewing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+/* ==================== PROFILE HEADER ==================== */
 .profile-header {
   display: flex;
   gap: 32px;
@@ -143,7 +221,13 @@ a { text-decoration: none; color: inherit; }
   margin-bottom: 32px;
 }
 
-.profile-avatar-section { flex-shrink: 0; }
+.profile-avatar-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
 
 .avatar-display {
   background: #0d0d0d;
@@ -154,6 +238,51 @@ a { text-decoration: none; color: inherit; }
 
 .avatar-display canvas { display: block; }
 
+/* ONLINE STATUS */
+.profile-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  border-radius: 20px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.status-online {
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.status-dot.status-offline {
+  background: #555;
+}
+
+.status-dot.status-ingame {
+  background: #60a5fa;
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.status-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+}
+
+.status-text.text-online { color: #4ade80; }
+.status-text.text-ingame { color: #60a5fa; }
+
+/* PROFILE INFO */
 .profile-info-section {
   flex: 1;
   display: flex;
@@ -161,10 +290,28 @@ a { text-decoration: none; color: inherit; }
   justify-content: center;
 }
 
-.profile-info-section h1 {
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile-name-row h1 {
   font-size: 28px;
   font-weight: 900;
-  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+.own-badge {
+  padding: 3px 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
   letter-spacing: 1px;
 }
 
@@ -208,13 +355,49 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   gap: 20px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-.meta-item { font-size: 13px; color: #555; font-weight: 600; }
+.meta-item {
+  font-size: 13px;
+  color: #555;
+  font-weight: 600;
+}
+
+.meta-playing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #60a5fa;
+}
+
+.meta-playing a {
+  color: #60a5fa;
+  font-weight: 700;
+  transition: color 0.15s;
+}
+
+.meta-playing a:hover { color: #93c5fd; }
+
+.playing-dot {
+  width: 6px;
+  height: 6px;
+  background: #60a5fa;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
 
 /* BIO */
 .profile-bio { margin-top: 4px; }
-.profile-bio p { color: #888; font-size: 14px; margin-bottom: 8px; line-height: 1.5; }
+.profile-bio p {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 #bio-editor { margin-top: 8px; }
 
@@ -236,7 +419,7 @@ a { text-decoration: none; color: inherit; }
 #bio-input:focus { border-color: #444; }
 .bio-buttons { display: flex; gap: 8px; }
 
-/* SECTION */
+/* ==================== SECTION ==================== */
 .section { margin-bottom: 32px; }
 
 .section h2 {
@@ -245,9 +428,23 @@ a { text-decoration: none; color: inherit; }
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid #151515;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* STATS */
+.game-count-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #1a1a1a;
+  border: 1px solid #222;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+}
+
+/* ==================== STATS ==================== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -262,9 +459,7 @@ a { text-decoration: none; color: inherit; }
   text-align: center;
 }
 
-.stat-icon-row {
-  margin-bottom: 8px;
-}
+.stat-icon-row { margin-bottom: 8px; }
 
 .stat-icon-img {
   width: 32px;
@@ -287,7 +482,93 @@ a { text-decoration: none; color: inherit; }
   letter-spacing: 1px;
 }
 
-/* BUTTONS */
+/* ==================== PUBLISHED GAMES ==================== */
+.published-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.pub-game-card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.pub-game-card:hover {
+  border-color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+.pub-game-thumb {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background: #080808;
+  position: relative;
+}
+
+.pub-game-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pub-game-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0a;
+}
+
+.pub-game-thumb-placeholder svg {
+  opacity: 0.3;
+}
+
+.pub-game-info {
+  padding: 14px 16px;
+}
+
+.pub-game-info h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pub-game-info p {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pub-game-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #444;
+  font-weight: 600;
+}
+
+.pub-game-stats svg {
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+/* ==================== BUTTONS ==================== */
 .btn {
   display: inline-block;
   padding: 10px 24px;
@@ -307,6 +588,7 @@ a { text-decoration: none; color: inherit; }
 .btn-sm { padding: 6px 14px; font-size: 12px; }
 .btn-full { width: 100%; text-align: center; }
 
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   #sidebar { width: 64px; }
   .sidebar-nav .nav-item span:not(.nav-svg):last-child { display: none; }
@@ -319,4 +601,5 @@ a { text-decoration: none; color: inherit; }
   .profile-header { flex-direction: column; align-items: center; text-align: center; }
   .profile-currencies { justify-content: center; }
   .profile-meta { justify-content: center; }
+  .profile-name-row { justify-content: center; }
 }

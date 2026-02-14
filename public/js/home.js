@@ -111,10 +111,6 @@
         <div class="game-thumb">
           <canvas id="${canvasId}" width="360" height="200"></canvas>
           <div class="game-overlay">
-            <button class="btn btn-play" data-play="${game.slug}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Play
-            </button>
           </div>
         </div>
         <div class="game-info">
@@ -129,17 +125,11 @@
         </div>
       `;
 
-      const playBtn = card.querySelector('[data-play]');
-      if (playBtn) {
-        playBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.location.href = `/game?place=${game.slug}`;
-        });
-      }
 
       card.addEventListener('click', () => {
-        window.location.href = `/game?place=${game.slug}`;
-      });
+  window.location.href = `/games/${game.slug}`;
+});
+      
     }
 
     return card;

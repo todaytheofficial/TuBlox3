@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox - Game</title>
+  <link rel="stylesheet" href="/css/game-details.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-top">
+        <a href="/home" class="logo-link">
+          <img src="/img/logo.png" alt="Tublox" class="sidebar-logo-img">
+          <span class="logo">TUBLOX</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/home" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="/studio" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>Studio</span>
+        </a>
+        <a href="/profile" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+          <span>Profile</span>
+        </a>
+        <a href="/avatar" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg>
+          <span>Avatar</span>
+        </a>
+      </nav>
+      <div class="sidebar-currency">
+        <div class="currency-item">
+          <img src="/img/urus.png" alt="Urus" class="currency-icon">
+          <span class="currency-amount" id="sidebar-urus">0</span>
+        </div>
+        <div class="currency-item currency-strikes">
+          <img src="/img/daily.png" alt="Strikes" class="currency-icon">
+          <span class="currency-amount" id="sidebar-strikes">0</span>
+        </div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="user-card">
+          <canvas id="sidebar-avatar" width="40" height="40"></canvas>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-username">...</span>
+            <span class="user-status">Online</span>
+          </div>
+        </div>
+        <button id="btn-logout" class="btn-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main id="main">
+      <!-- LOADING -->
+      <div id="page-loading" class="page-loading">
+        <div class="loading-spinner"></div>
+        <span>Loading game info...</span>
+      </div>
+
+      <!-- ERROR -->
+      <div id="page-error" class="page-error" style="display:none">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <h2>Game Not Found</h2>
+        <p id="error-message">This game doesn't exist or has been removed.</p>
+        <a href="/home" class="btn btn-back">Back to Home</a>
+      </div>
+
+      <!-- GAME DETAILS -->
+      <div id="game-details" style="display:none">
+        <!-- BACK BUTTON -->
+        <a href="/home" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Back to Games
+        </a>
+
+        <!-- HERO SECTION -->
+        <div class="game-hero">
+          <div class="game-thumbnail-wrapper">
+            <canvas id="game-thumbnail" width="640" height="360"></canvas>
+            <div class="game-thumbnail-overlay">
+              <button class="btn btn-play-big" id="btn-play">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Play Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GAME INFO PANEL -->
+        <div class="game-info-panel">
+          <div class="game-info-main">
+            <!-- GAME HEADER -->
+            <div class="game-header">
+              <div class="game-avatar-wrapper">
+                <canvas id="game-avatar" width="64" height="64"></canvas>
+              </div>
+              <div class="game-title-block">
+                <h1 id="game-name">Game Name</h1>
+                <div class="game-author">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                    <circle cx="12" cy="8" r="5"/>
+                    <path d="M20 21a8 8 0 10-16 0"/>
+                  </svg>
+                  <span>by <strong id="game-author">Author</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="game-description-section">
+              <h3>Description</h3>
+              <p id="game-description">No description provided.</p>
+            </div>
+          </div>
+
+          <!-- SIDEBAR INFO -->
+          <div class="game-info-sidebar">
+            <!-- PLAY BUTTON MOBILE -->
+            <button class="btn btn-play-sidebar" id="btn-play-sidebar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              Play Now
+            </button>
+
+            <!-- STATS -->
+            <div class="info-card">
+              <h4>Game Info</h4>
+              <div class="info-row">
+                <span class="info-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Online
+                </span>
+                <span class="info-value online-value">
+                  <span class="online-dot-small"></span>
+                  <span id="game-online">0</span>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  Total Plays
+                </span>
+                <span class="info-value" id="game-plays">0</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                  </svg>
+                  Max Players
+                </span>
+                <span class="info-value" id="game-max-players">20</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"/>
+                    <path d="M6 12h4M8 10v4"/>
+                  </svg>
+                  Type
+                </span>
+                <span class="info-value game-type-badge" id="game-type">platformer</span>
+              </div>
+            </div>
+
+            <!-- IDs -->
+            <div class="info-card">
+              <h4>Identifiers</h4>
+              <div class="info-row">
+                <span class="info-label">Game ID</span>
+                <span class="info-value info-value-mono" id="game-id">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Slug</span>
+                <span class="info-value info-value-mono" id="game-slug">—</span>
+              </div>
+              <div class="id-copy-row">
+                <button class="btn-copy" id="btn-copy-id" title="Copy Game ID">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                  Copy ID
+                </button>
+              </div>
+            </div>
+
+            <!-- DATES -->
+            <div class="info-card">
+              <h4>Dates</h4>
+              <div class="info-row">
+                <span class="info-label">Created</span>
+                <span class="info-value" id="game-created">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Updated</span>
+                <span class="info-value" id="game-updated">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/js/character.js"></script>
+  <script src="/js/game-details.js"></script>
+</body>
+</html>

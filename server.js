@@ -308,11 +308,13 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/landi
 app.get('/home', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/home.html')));
 app.get('/auth', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/auth.html')));
 app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/profile.html')));
+app.get('/profile/:username', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/profile.html')));
 app.get('/avatar', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/avatar.html')));
 app.get('/game', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/game.html')));
 app.get('/create', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/create.html')));
 app.get('/studio', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio.html')));
 app.get('/studio/edit', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio-editor.html')));
+app.get('/games/:slug', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/game-details.html')));
 
 // ==================== AUTH API ====================
 
@@ -335,6 +337,52 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true, username: user.username, dailyReward: reward });
   } catch (e) {
     console.error('[Register]', e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/games/:slug/details', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    const game = await Game.findOne({ slug: req.params.slug, status: 'active' })
+      .select('slug name description type thumbnail totalPlays maxPlayers createdAt updatedAt');
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+
+    // Try to find studio game for author info
+    let author = 'Tublox';
+    let gameId = null;
+    if (req.params.slug.startsWith('studio_')) {
+      const studioId = req.params.slug.replace('studio_', '');
+      const studioGame = await StudioGame.findById(studioId).select('ownerUsername description');
+      if (studioGame) {
+        author = studioGame.ownerUsername;
+      }
+    }
+
+    // Online count
+    let onlineCount = 0;
+    for (const [, room] of Object.entries(rooms)) {
+      if (room.place === req.params.slug) {
+        onlineCount += Object.keys(room.players).length;
+      }
+    }
+
+    res.json({
+      slug: game.slug,
+      name: game.name,
+      description: game.description,
+      type: game.type,
+      thumbnail: game.thumbnail,
+      totalPlays: game.totalPlays,
+      maxPlayers: game.maxPlayers,
+      author,
+      gameId: game.slug,
+      onlineCount,
+      createdAt: game.createdAt,
+      updatedAt: game.updatedAt
+    });
+  } catch (e) {
+    console.error('[game-details]', e);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -404,6 +452,70 @@ app.post('/api/bio', authMiddleware, async (req, res) => {
     await User.findByIdAndUpdate(req.userId, { bio: bio || '' });
     res.json({ success: true });
   } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== PUBLIC PROFILE API ====================
+
+app.get('/api/profile/:username', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Database not ready' });
+    
+    const username = req.params.username.toLowerCase();
+    const user = await User.findOne({ username }).select('-password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Count published studio games by this user
+    let publishedGames = [];
+    try {
+      const studioGames = await StudioGame.find({ 
+        owner: user._id, 
+        status: 'public', 
+        published: true 
+      }).select('title description thumbnailData plays createdAt updatedAt').sort({ updatedAt: -1 }).limit(20);
+      
+      publishedGames = studioGames.map(g => ({
+        id: g._id,
+        slug: `studio_${g._id}`,
+        title: g.title,
+        description: g.description,
+        thumbnailData: g.thumbnailData,
+        plays: g.plays,
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt
+      }));
+    } catch (e) {}
+
+    // Check if this user is online in any game
+    let isOnline = false;
+    let currentGame = null;
+    for (const [, room] of Object.entries(rooms)) {
+      for (const [, player] of Object.entries(room.players)) {
+        if (player.username === username) {
+          isOnline = true;
+          currentGame = room.place;
+          break;
+        }
+      }
+      if (isOnline) break;
+    }
+
+    res.json({
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+      urus: user.urus,
+      dailyStrikes: user.dailyStrikes,
+      gamesPlayed: user.gamesPlayed,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      publishedGames,
+      isOnline,
+      currentGame
+    });
+  } catch (e) {
+    console.error('[profile]', e);
     res.status(500).json({ error: 'Server error' });
   }
 });
