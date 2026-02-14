@@ -15,7 +15,7 @@ const PORT = 3000;
 const JWT_SECRET = 'tublox3_secret_key_2024';
 const MONGO_URI = 'mongodb+srv://Today_Idk:TpdauT434odayTodayToday23@cluster0.rlgkop5.mongodb.net/tublox3?retryWrites=true&w=majority&appName=Cluster0';
 
-const hcaptchakeydsfs = 'ES_7fac1684da37404ba4e09ddaa116cade';
+const HCAPTCHA_SECRET = 'ES_7fac1684da37404ba4e09ddaa116cade';
 const HCAPTCHA_SITEKEY = '20900438-205e-4c6e-bf50-7d3e922c9c08';
 
 // ==================== SCHEMAS ====================
