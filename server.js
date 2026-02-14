@@ -171,6 +171,23 @@ app.get('/auth', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/a
 app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/profile.html')));
 app.get('/avatar', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/avatar.html')));
 app.get('/game', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/game.html')));
+app.get('/studio', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/studio.html')));
+
+// В секции API добавь переменную для сдвига времени (после PLACES_CACHE):
+let timerOffsetMs = 0; // Админский сдвиг таймера в миллисекундах
+const STUDIO_TARGET = Date.UTC(2026, 1, 14, 9, 25, 30, 0); // 14 фев 2026, 12:25:30 MSK
+
+// Обнови /api/time:
+app.get('/api/time', (req, res) => {
+  const now = Date.now();
+  const remainingMs = (STUDIO_TARGET + timerOffsetMs) - now;
+  res.json({
+    remainingMs: remainingMs,
+    serverNow: now,
+    offsetMs: timerOffsetMs
+  });
+});
+
 
 // ==================== AUTH API ====================
 
@@ -478,6 +495,76 @@ io.on('connection', (socket) => {
     }
   });
 
+    // ---- STUDIO: Timer Control (admin only) ----
+  socket.on('studio-join', async (data) => {
+    try {
+      if (!data.token) return;
+      const decoded = jwt.verify(data.token, JWT_SECRET);
+      const user = await User.findById(decoded.userId).select('username');
+      if (!user) return;
+
+      socket._studioUser = user.username;
+      socket.join('studio-room');
+
+      // Отправляем текущий оффсет
+      socket.emit('studio-sync', {
+        offsetMs: timerOffsetMs,
+        remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(),
+        isAdmin: user.username === 'today_idk'
+      });
+    } catch (e) {}
+  });
+
+  socket.on('studio-adjust-time', async (data) => {
+    try {
+      if (!socket._studioUser || socket._studioUser !== 'today_idk') return;
+
+      const { action, amount } = data;
+      if (!action || !amount) return;
+
+      const ms = parseInt(amount);
+      if (isNaN(ms)) return;
+
+      switch(action) {
+        case 'add-hours':
+          timerOffsetMs += ms * 60 * 60 * 1000;
+          break;
+        case 'sub-hours':
+          timerOffsetMs -= ms * 60 * 60 * 1000;
+          break;
+        case 'add-minutes':
+          timerOffsetMs += ms * 60 * 1000;
+          break;
+        case 'sub-minutes':
+          timerOffsetMs -= ms * 60 * 1000;
+          break;
+        case 'add-seconds':
+          timerOffsetMs += ms * 1000;
+          break;
+        case 'sub-seconds':
+          timerOffsetMs -= ms * 1000;
+          break;
+        case 'reset':
+          timerOffsetMs = 0;
+          break;
+      }
+
+      // Отправляем всем в studio-room
+      const remaining = (STUDIO_TARGET + timerOffsetMs) - Date.now();
+      io.to('studio-room').emit('studio-timer-update', {
+        offsetMs: timerOffsetMs,
+        remainingMs: remaining,
+        adjustedBy: socket._studioUser,
+        action: action,
+        amount: ms
+      });
+
+      console.log(`[Studio] ${socket._studioUser} adjusted timer: ${action} ${ms} (offset: ${timerOffsetMs}ms)`);
+    } catch (e) {
+      console.error('[Studio adjust]', e);
+    }
+  });
+  
   // ---- PLAYER UPDATE ----
   socket.on('player-update', (data) => {
     const roomId = playerRooms[socket.id];

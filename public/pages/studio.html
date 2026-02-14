@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tublox - Studio</title>
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/studio.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-top">
+        <a href="/home" class="logo-link">
+          <img src="/img/logo.png" alt="Tublox" class="sidebar-logo-img">
+          <span class="logo">TUBLOX</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/home" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="/studio" class="nav-item active">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>Studio</span>
+        </a>
+        <a href="/profile" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+          <span>Profile</span>
+        </a>
+        <a href="/avatar" class="nav-item">
+          <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v2a4 4 0 11-8 0V6a4 4 0 014-4z"/><rect x="6" y="12" width="12" height="10" rx="2"/></svg>
+          <span>Avatar</span>
+        </a>
+      </nav>
+      <div class="sidebar-currency">
+        <div class="currency-item">
+          <img src="/img/urus.png" alt="Urus" class="currency-icon">
+          <span class="currency-amount" id="sidebar-urus">0</span>
+        </div>
+        <div class="currency-item currency-strikes">
+          <img src="/img/daily.png" alt="Strikes" class="currency-icon">
+          <span class="currency-amount" id="sidebar-strikes">0</span>
+        </div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="user-card">
+          <canvas id="sidebar-avatar" width="40" height="40"></canvas>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-username">...</span>
+            <span class="user-status">Online</span>
+          </div>
+        </div>
+        <button id="btn-logout" class="btn-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main id="main">
+      <div class="studio-page">
+        <canvas id="studio-bg" class="create-bg"></canvas>
+
+        <div class="studio-content">
+          <!-- Header -->
+          <div class="studio-header">
+            <div class="studio-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <h1 class="studio-title">Tublox Studio</h1>
+            <p class="studio-subtitle">Game Creation Platform</p>
+            <div class="studio-status" id="studio-status">
+              <span class="status-dot"></span>
+              <span>Connecting...</span>
+            </div>
+          </div>
+
+          <!-- Countdown -->
+          <div class="studio-countdown-card">
+            <div class="countdown-header-row">
+              <h2>Release Countdown</h2>
+              <span class="countdown-live-badge" id="live-badge">
+                <span class="live-dot"></span>
+                LIVE
+              </span>
+            </div>
+
+            <!-- Timer -->
+            <div id="countdown-container" class="countdown-container-studio">
+              <div class="countdown-timer-studio">
+                <div class="countdown-block-studio">
+                  <div class="countdown-number-bg">
+                    <span class="countdown-number-studio" id="cd-days">00</span>
+                  </div>
+                  <span class="countdown-unit-studio">DAYS</span>
+                </div>
+                <span class="countdown-sep-studio">:</span>
+                <div class="countdown-block-studio">
+                  <div class="countdown-number-bg">
+                    <span class="countdown-number-studio" id="cd-hours">00</span>
+                  </div>
+                  <span class="countdown-unit-studio">HOURS</span>
+                </div>
+                <span class="countdown-sep-studio">:</span>
+                <div class="countdown-block-studio">
+                  <div class="countdown-number-bg">
+                    <span class="countdown-number-studio" id="cd-minutes">00</span>
+                  </div>
+                  <span class="countdown-unit-studio">MIN</span>
+                </div>
+                <span class="countdown-sep-studio">:</span>
+                <div class="countdown-block-studio">
+                  <div class="countdown-number-bg">
+                    <span class="countdown-number-studio" id="cd-seconds">00</span>
+                  </div>
+                  <span class="countdown-unit-studio">SEC</span>
+                </div>
+              </div>
+
+              <div class="countdown-progress-studio">
+                <div class="countdown-progress-fill-studio" id="cd-progress"></div>
+              </div>
+
+              <div class="countdown-meta">
+                <span class="countdown-target-date">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  February 14, 2026 — 12:25 MSK
+                </span>
+              </div>
+            </div>
+
+            <!-- Released -->
+            <div id="released-container" class="released-container-studio" style="display:none">
+              <div class="released-badge-studio">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              </div>
+              <h2 class="released-title-studio">RELEASED</h2>
+              <p class="released-sub-studio">Tublox Studio is now available!</p>
+              <button class="btn btn-white" onclick="window.location.reload()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:6px">
+                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                </svg>
+                Restart Site
+              </button>
+            </div>
+          </div>
+
+          <!-- ADMIN PANEL (hidden by default) -->
+          <div id="admin-panel" class="admin-panel" style="display:none">
+            <div class="admin-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <h3>Admin Controls</h3>
+              <span class="admin-badge">OWNER</span>
+            </div>
+
+            <div class="admin-info">
+              <span class="admin-offset-label">Current offset:</span>
+              <span class="admin-offset-value" id="admin-offset">0s</span>
+            </div>
+
+            <!-- Hours -->
+            <div class="admin-row">
+              <span class="admin-row-label">Hours</span>
+              <div class="admin-row-buttons">
+                <button class="admin-btn admin-btn-sub" data-action="sub-hours" data-amount="1">−1h</button>
+                <button class="admin-btn admin-btn-sub" data-action="sub-hours" data-amount="5">−5h</button>
+                <button class="admin-btn admin-btn-add" data-action="add-hours" data-amount="1">+1h</button>
+                <button class="admin-btn admin-btn-add" data-action="add-hours" data-amount="5">+5h</button>
+              </div>
+            </div>
+
+            <!-- Minutes -->
+            <div class="admin-row">
+              <span class="admin-row-label">Minutes</span>
+              <div class="admin-row-buttons">
+                <button class="admin-btn admin-btn-sub" data-action="sub-minutes" data-amount="1">−1m</button>
+                <button class="admin-btn admin-btn-sub" data-action="sub-minutes" data-amount="10">−10m</button>
+                <button class="admin-btn admin-btn-add" data-action="add-minutes" data-amount="1">+1m</button>
+                <button class="admin-btn admin-btn-add" data-action="add-minutes" data-amount="10">+10m</button>
+              </div>
+            </div>
+
+            <!-- Seconds -->
+            <div class="admin-row">
+              <span class="admin-row-label">Seconds</span>
+              <div class="admin-row-buttons">
+                <button class="admin-btn admin-btn-sub" data-action="sub-seconds" data-amount="10">−10s</button>
+                <button class="admin-btn admin-btn-sub" data-action="sub-seconds" data-amount="30">−30s</button>
+                <button class="admin-btn admin-btn-add" data-action="add-seconds" data-amount="10">+10s</button>
+                <button class="admin-btn admin-btn-add" data-action="add-seconds" data-amount="30">+30s</button>
+              </div>
+            </div>
+
+            <!-- Reset -->
+            <div class="admin-row admin-row-reset">
+              <button class="admin-btn admin-btn-reset" data-action="reset" data-amount="0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:4px">
+                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                </svg>
+                Reset to Original
+              </button>
+            </div>
+
+            <!-- Activity log -->
+            <div class="admin-log">
+              <h4>Activity Log</h4>
+              <div id="admin-log-list" class="admin-log-list">
+                <div class="admin-log-empty">No adjustments yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div class="studio-features">
+            <div class="studio-feature">
+              <div class="feature-icon-studio">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                </svg>
+              </div>
+              <div>
+                <h4>Visual Editor</h4>
+                <p>Drag & drop platforms and objects</p>
+              </div>
+            </div>
+            <div class="studio-feature">
+              <div class="feature-icon-studio">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+              </div>
+              <div>
+                <h4>Instant Play</h4>
+                <p>Test your game in real-time</p>
+              </div>
+            </div>
+            <div class="studio-feature">
+              <div class="feature-icon-studio">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              </div>
+              <div>
+                <h4>Multiplayer</h4>
+                <p>Share games with the community</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/character.js"></script>
+  <script src="/js/studio.js"></script>
+</body>
+</html>
