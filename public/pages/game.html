@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tublox - Game</title>
   <link rel="stylesheet" href="/css/game.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -17,18 +17,82 @@
         <p id="loader-text">Connecting...</p>
       </div>
     </div>
+
     <canvas id="game-canvas"></canvas>
+
     <div id="hud">
-      <div class="hud-top-left"><span id="hud-place" class="hud-place"></span><span id="hud-players" class="hud-players">0</span></div>
-      <div class="hud-top-right"><span id="hud-fps" class="hud-fps">60 FPS</span></div>
+      <div class="hud-top-left">
+        <span id="hud-place" class="hud-place"></span>
+        <span id="hud-players" class="hud-players">0</span>
+      </div>
+      <div class="hud-top-right">
+        <span id="hud-fps" class="hud-fps">60 FPS</span>
+      </div>
     </div>
-    <div id="chat-container"><div id="chat-messages"></div><div id="chat-input-container" style="display:none"><input type="text" id="chat-input" placeholder="Type..." maxlength="200"></div></div>
+
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+      <div id="chat-input-container" style="display:none">
+        <input type="text" id="chat-input" placeholder="Type..." maxlength="200">
+      </div>
+    </div>
+
+    <!-- MOBILE CONTROLS -->
+    <div id="mobile-controls" style="display:none">
+      <!-- Left side: D-Pad / Joystick -->
+      <div id="mobile-joystick-zone">
+        <div id="mobile-joystick">
+          <div id="mobile-joystick-knob"></div>
+        </div>
+      </div>
+
+      <!-- Right side: Action buttons -->
+      <div id="mobile-buttons-zone">
+        <button id="mobile-btn-jump" class="mobile-btn mobile-btn-jump">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-attack" class="mobile-btn mobile-btn-attack" style="display:none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14.5 2l6 6-8.5 8.5-6-6z"/>
+            <path d="M9.5 14.5L4 20"/>
+            <path d="M2 22l2-2"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-chat" class="mobile-btn mobile-btn-chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+        </button>
+        <button id="mobile-btn-menu" class="mobile-btn mobile-btn-menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- KICKED OVERLAY -->
+    <div id="kicked-overlay" style="display:none">
+      <div class="kicked-panel">
+        <h2>Disconnected</h2>
+        <p id="kicked-reason">You joined from another tab</p>
+        <button class="btn btn-white btn-full" onclick="window.location.href='/home'">Back to Home</button>
+      </div>
+    </div>
+
     <div id="esc-menu" style="display:none">
       <div class="esc-menu-overlay"></div>
       <div class="esc-menu-panel">
         <img src="/img/logo.png" alt="Tublox" class="menu-logo">
         <h2>Menu</h2>
-        <div class="menu-section"><h3>Players <span id="menu-player-count"></span></h3><div id="menu-player-list" class="player-list"></div></div>
+        <div class="menu-section">
+          <h3>Players <span id="menu-player-count"></span></h3>
+          <div id="menu-player-list" class="player-list"></div>
+        </div>
         <div class="menu-buttons">
           <button id="btn-resume" class="btn btn-white btn-full">Resume</button>
           <button id="btn-reset" class="btn btn-outline-light btn-full">Reset Character</button>

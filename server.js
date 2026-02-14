@@ -349,6 +349,8 @@ function clearPlaceCache(slug) {
 
 const rooms = {};
 const playerRooms = {};
+// Anti-duplicate: userId -> socketId mapping
+const activeUserSessions = {};
 
 function getOrCreateRoom(placeName, maxPlayers = 20) {
   for (const [roomId, room] of Object.entries(rooms)) {
@@ -359,6 +361,19 @@ function getOrCreateRoom(placeName, maxPlayers = 20) {
   return roomId;
 }
 
+function removePlayerFromAllRooms(socketId) {
+  const roomId = playerRooms[socketId];
+  if (roomId && rooms[roomId]) {
+    const player = rooms[roomId].players[socketId];
+    delete rooms[roomId].players[socketId];
+    io.to(roomId).emit('player-left', { id: socketId });
+    if (Object.keys(rooms[roomId].players).length === 0) {
+      delete rooms[roomId];
+    }
+  }
+  delete playerRooms[socketId];
+}
+
 io.on('connection', (socket) => {
 
   // ---- JOIN GAME ----
@@ -367,13 +382,42 @@ io.on('connection', (socket) => {
       const { token, place } = data;
       if (!token || !place) return;
 
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('-password');
+      let decoded;
+      try {
+        decoded = jwt.verify(token, JWT_SECRET);
+      } catch (e) {
+        return socket.emit('error-msg', 'Invalid token');
+      }
+
+      const userId = decoded.userId;
+      const user = await User.findById(userId).select('-password');
       if (!user) return socket.emit('error-msg', 'User not found');
 
       const placeData = await getPlaceConfig(place);
       if (!placeData) return socket.emit('error-msg', 'TuGame not found');
 
+      // === ANTI-DUPLICATE: kick old session ===
+      const oldSocketId = activeUserSessions[userId];
+      if (oldSocketId && oldSocketId !== socket.id) {
+        const oldSocket = io.sockets.sockets.get(oldSocketId);
+        if (oldSocket) {
+          oldSocket.emit('kicked', 'You joined from another tab');
+          removePlayerFromAllRooms(oldSocketId);
+          oldSocket.disconnect(true);
+        }
+        delete activeUserSessions[userId];
+      }
+
+      // Check if this socket is already in a room
+      if (playerRooms[socket.id]) {
+        removePlayerFromAllRooms(socket.id);
+      }
+
+      // Register active session
+      activeUserSessions[userId] = socket.id;
+      socket._userId = userId;
+
+      // Increment plays (only once per actual join, not per tab spam)
       user.gamesPlayed += 1;
       await user.save();
       await Game.updateOne({ slug: place }, { $inc: { totalPlays: 1 } });
@@ -552,15 +596,11 @@ io.on('connection', (socket) => {
 
   // ---- DISCONNECT ----
   socket.on('disconnect', () => {
-    const roomId = playerRooms[socket.id];
-    if (roomId && rooms[roomId]) {
-      delete rooms[roomId].players[socket.id];
-      socket.to(roomId).emit('player-left', { id: socket.id });
-      if (Object.keys(rooms[roomId].players).length === 0) {
-        delete rooms[roomId];
-      }
+    // Clean up active session tracking
+    if (socket._userId && activeUserSessions[socket._userId] === socket.id) {
+      delete activeUserSessions[socket._userId];
     }
-    delete playerRooms[socket.id];
+    removePlayerFromAllRooms(socket.id);
   });
 });
 
