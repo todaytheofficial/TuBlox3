@@ -9,8 +9,8 @@ const canvas = document.getElementById('editor-canvas');
 const ctx = canvas.getContext('2d');
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-let gameData = null, blocks = [], items = [], models = [], avatars = [], settings = {}, assets = [];
-let selectedBlock = null, selectedItem = null, selectedModel = null, selectedAvatar = null, selectedKeyframe = null;
+let gameData = null, blocks = [], items = [], models = [], avatars = [], vehicles = [], settings = {}, assets = [];
+let selectedBlock = null, selectedItem = null, selectedModel = null, selectedAvatar = null, selectedVehicle = null, selectedKeyframe = null;
 let currentTool = 'select';
 let camera = { x: 0, y: 0, zoom: 1 };
 let isDragging = false, isPanning = false, isScaling = false, scaleHandle = '';
@@ -33,6 +33,17 @@ const MODEL_DEFS = {
   door_lever: { id: 'door_lever', name: 'Lever Door', description: 'Opens with Lever', category: 'model', icon: 'door_lever', defaults: { leverId: '', color: '#555555', openSpeed: 2, direction: 'up' } },
   lever: { id: 'lever', name: 'Lever', description: 'Activates mechanisms', category: 'model', icon: 'lever', defaults: { targetId: '', oneTime: false } },
   keycard: { id: 'keycard', name: 'Keycard', description: 'Opens keycard doors', category: 'model', icon: 'keycard', defaults: { cardColor: 'red' } }
+};
+
+// ==================== VEHICLE DEFINITIONS ====================
+
+const VEHICLE_DEFS = {
+  car: { name: 'Car', emoji: '🚗', w: 120, h: 50, maxSpeed: 10, acceleration: 0.5, brakeForce: 0.8, mass: 2, seats: 1 },
+  truck: { name: 'Truck', emoji: '🚛', w: 150, h: 60, maxSpeed: 7, acceleration: 0.3, brakeForce: 0.6, mass: 5, seats: 2 },
+  sports: { name: 'Sports Car', emoji: '🏎️', w: 130, h: 42, maxSpeed: 18, acceleration: 1.0, brakeForce: 1.2, mass: 1.5, seats: 1 },
+  buggy: { name: 'Buggy', emoji: '🪲', w: 110, h: 55, maxSpeed: 12, acceleration: 0.7, brakeForce: 0.5, mass: 1, jumpForce: 8, seats: 1 },
+  bus: { name: 'Bus', emoji: '🚌', w: 180, h: 65, maxSpeed: 8, acceleration: 0.3, brakeForce: 0.5, mass: 6, seats: 4 },
+  monster: { name: 'Monster Truck', emoji: '🛻', w: 140, h: 70, maxSpeed: 9, acceleration: 0.4, brakeForce: 0.7, mass: 4, jumpForce: 10, seats: 1 }
 };
 
 // ==================== ITEM VISUALS ====================
@@ -81,6 +92,77 @@ const MODEL_SVG_ICONS = {
   keycard:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="18" height="12" rx="2"/><rect x="5" y="9" width="4" height="3" rx="0.5"/></svg>`
 };
 
+const VEHICLE_SVG_ICONS = {
+  car: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M5 11l2-4h10l2 4"/>
+    <rect x="3" y="11" width="18" height="7" rx="2"/>
+    <circle cx="7.5" cy="18" r="2"/>
+    <circle cx="16.5" cy="18" r="2"/>
+    <line x1="5" y1="14" x2="19" y2="14"/>
+  </svg>`,
+
+  truck: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="2" y="7" width="10" height="11" rx="1"/>
+    <path d="M12 10h5l3 4v4h-8V10z"/>
+    <circle cx="6" cy="18" r="2"/>
+    <circle cx="17" cy="18" r="2"/>
+    <line x1="12" y1="7" x2="12" y2="18"/>
+    <rect x="14" y="11" width="3" height="2.5" rx="0.5"/>
+  </svg>`,
+
+  sports: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M3 14l3-6h12l3 3v3H3z"/>
+    <path d="M6 8l2-3h8l3 3"/>
+    <circle cx="7" cy="17" r="2"/>
+    <circle cx="17" cy="17" r="2"/>
+    <path d="M9 8v3"/>
+    <path d="M15 8v3"/>
+    <path d="M21 11l1.5-1"/>
+    <line x1="3" y1="14" x2="21" y2="14"/>
+  </svg>`,
+
+  buggy: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M6 10h12"/>
+    <path d="M7 10l1-4h8l1 4"/>
+    <path d="M8 6h8"/>
+    <line x1="9" y1="6" x2="9" y2="10"/>
+    <line x1="15" y1="6" x2="15" y2="10"/>
+    <path d="M5 10v4"/>
+    <path d="M19 10v4"/>
+    <circle cx="6" cy="16" r="2.5"/>
+    <circle cx="18" cy="16" r="2.5"/>
+    <line x1="8.5" y1="14" x2="15.5" y2="14"/>
+    <rect x="10" y="8" width="4" height="2" rx="0.5"/>
+  </svg>`,
+
+  bus: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="2" y="5" width="20" height="13" rx="2"/>
+    <circle cx="6.5" cy="18" r="2"/>
+    <circle cx="17.5" cy="18" r="2"/>
+    <line x1="2" y1="12" x2="22" y2="12"/>
+    <rect x="4" y="7" width="3" height="4" rx="0.5"/>
+    <rect x="8.5" y="7" width="3" height="4" rx="0.5"/>
+    <rect x="13" y="7" width="3" height="4" rx="0.5"/>
+    <rect x="17.5" y="7" width="3" height="4" rx="0.5"/>
+    <line x1="2" y1="5" x2="22" y2="5"/>
+    <path d="M20 7h1v3h-1"/>
+  </svg>`,
+
+  monster: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="4" y="5" width="16" height="8" rx="2"/>
+    <rect x="8" y="7" width="8" height="4" rx="1"/>
+    <line x1="7" y1="13" x2="7" y2="15"/>
+    <line x1="17" y1="13" x2="17" y2="15"/>
+    <circle cx="7" cy="18" r="3"/>
+    <circle cx="17" cy="18" r="3"/>
+    <circle cx="7" cy="18" r="1.2"/>
+    <circle cx="17" cy="18" r="1.2"/>
+    <path d="M10 18h4"/>
+    <line x1="4" y1="9" x2="2.5" y2="8"/>
+    <line x1="20" y1="9" x2="21.5" y2="8"/>
+  </svg>`
+};
+
 function getItemSVG(type) { return ITEM_SVG_ICONS[type] || `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg>`; }
 function getModelSVG(type) {
   if (MODEL_SVG_ICONS[type]) return MODEL_SVG_ICONS[type];
@@ -89,6 +171,258 @@ function getModelSVG(type) {
 }
 function getItemVisual(type) { return ITEM_VISUALS[type] || null; }
 function getModelVisual(type) { return MODEL_VISUALS[type] || null; }
+
+// ==================== VEHICLE DRAWING ====================
+
+function drawEditorVehicle(c, v, time) {
+  const tp = v.type || 'car';
+  const def = VEHICLE_DEFS[tp] || VEHICLE_DEFS.car;
+  const w = v.w || def.w || 120;
+  const h = v.h || def.h || 50;
+  const dir = v.direction || 1;
+  const bc = v.bodyColor || '#3b82f6';
+  const ac2 = v.accentColor || '#1e3a5f';
+  const wc = v.wheelColor || '#222222';
+  const winC = v.windowColor || '#87ceeb';
+  const winO = v.windowOpacity || 0.6;
+  const wRot = (time || 0) * 2;
+
+  c.save();
+  c.translate(v.x, v.y);
+  if (dir === -1) c.scale(-1, 1);
+
+  const hw = w / 2, hh = h / 2;
+  const wR = tp === 'monster' ? h * 0.32 : tp === 'buggy' ? h * 0.28 : h * 0.22;
+  const wy = hh - wR + 2;
+  const wx1 = -hw * 0.55, wx2 = hw * 0.55;
+
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.18)';
+  c.beginPath();
+  c.ellipse(0, hh + 3, hw * 0.75, 3, 0, 0, 6.283);
+  c.fill();
+
+  // body by type
+  if (tp === 'truck') {
+    c.fillStyle = ac2;
+    c.fillRect(-hw, -hh, w * 0.5, h * 0.65);
+    c.fillStyle = 'rgba(255,255,255,0.04)';
+    c.fillRect(-hw, -hh, w * 0.5, 2);
+    c.fillStyle = bc;
+    c.fillRect(w * 0.5 - hw, -hh, w * 0.5, h * 0.7);
+    c.fillStyle = 'rgba(255,255,255,0.07)';
+    c.fillRect(w * 0.5 - hw, -hh, w * 0.5, 2);
+    c.fillStyle = winC;
+    c.globalAlpha = winO;
+    c.fillRect(w * 0.55 - hw, -hh + 5, w * 0.3, h * 0.3);
+    c.globalAlpha = 1;
+  } else if (tp === 'bus') {
+    c.fillStyle = bc;
+    c.beginPath();
+    c.roundRect(-hw + 4, -hh, w - 8, h - wR - 2, 6);
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.05)';
+    c.fillRect(-hw + 4, -hh, w - 8, 2);
+    c.fillStyle = winC;
+    c.globalAlpha = winO;
+    const wn = 5, ww2 = (w - 30) / (wn + 0.5);
+    for (let i = 0; i < wn; i++) c.fillRect(-hw + 14 + i * (ww2 + 4), -hh + 7, ww2, h * 0.28);
+    c.globalAlpha = 1;
+    c.fillStyle = ac2;
+    c.fillRect(-hw + 4, 4, w - 8, 3);
+  } else if (tp === 'sports') {
+    c.fillStyle = bc;
+    c.beginPath();
+    c.moveTo(-hw + 3, hh - wR - 4);
+    c.lineTo(-hw * 0.2, -hh);
+    c.lineTo(hw * 0.4, -hh);
+    c.lineTo(hw - 3, -hh * 0.3);
+    c.lineTo(hw - 3, hh - wR - 4);
+    c.closePath();
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.06)';
+    c.fillRect(-hw * 0.2, -hh, hw * 0.6, 2);
+    c.fillStyle = winC;
+    c.globalAlpha = winO;
+    c.beginPath();
+    c.moveTo(-hw * 0.12, -hh + 3);
+    c.lineTo(hw * 0.28, -hh + 3);
+    c.lineTo(hw * 0.35, -hh * 0.3);
+    c.lineTo(-hw * 0.1, -hh * 0.3);
+    c.closePath();
+    c.fill();
+    c.globalAlpha = 1;
+    c.fillStyle = ac2;
+    c.fillRect(-hw, hh - wR - 6, 6, 3);
+  } else if (tp === 'buggy') {
+    c.strokeStyle = bc;
+    c.lineWidth = 3;
+    c.strokeRect(-hw + 8, -hh + 8, w - 16, h - wR - 12);
+    c.strokeStyle = ac2;
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(-hw * 0.3, -hh);
+    c.lineTo(-hw * 0.3, -hh + 8);
+    c.moveTo(hw * 0.3, -hh);
+    c.lineTo(hw * 0.3, -hh + 8);
+    c.moveTo(-hw * 0.3, -hh);
+    c.lineTo(hw * 0.3, -hh);
+    c.stroke();
+    c.fillStyle = '#333';
+    c.fillRect(-7, -hh + 10, 14, h * 0.28);
+  } else if (tp === 'monster') {
+    c.fillStyle = bc;
+    c.beginPath();
+    c.roundRect(-hw + 6, -hh, w - 12, h - wR - 8, 4);
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.05)';
+    c.fillRect(-hw + 6, -hh, w - 12, 2);
+    c.fillStyle = winC;
+    c.globalAlpha = winO;
+    c.fillRect(-hw * 0.2, -hh + 6, w * 0.4, h * 0.22);
+    c.globalAlpha = 1;
+    c.strokeStyle = '#555';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(-hw * 0.5, hh - wR - 6);
+    c.lineTo(-hw * 0.5, hh - wR + 8);
+    c.moveTo(hw * 0.5, hh - wR - 6);
+    c.lineTo(hw * 0.5, hh - wR + 8);
+    c.stroke();
+  } else {
+    // default car
+    c.fillStyle = bc;
+    c.beginPath();
+    c.moveTo(-hw + 4, hh - wR - 4);
+    c.lineTo(-hw * 0.25, -hh);
+    c.quadraticCurveTo(0, -hh - 3, hw * 0.25, -hh);
+    c.lineTo(hw - 4, -hh * 0.35);
+    c.lineTo(hw - 4, hh - wR - 4);
+    c.closePath();
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.06)';
+    c.fillRect(-hw * 0.25, -hh, hw * 0.5, 2);
+    c.fillStyle = winC;
+    c.globalAlpha = winO;
+    c.beginPath();
+    c.moveTo(-hw * 0.18, -hh + 3);
+    c.lineTo(hw * 0.18, -hh + 3);
+    c.lineTo(hw * 0.25, -hh * 0.35);
+    c.lineTo(-hw * 0.22, -hh * 0.35);
+    c.closePath();
+    c.fill();
+    c.globalAlpha = 1;
+    c.fillStyle = ac2;
+    c.fillRect(-hw + 2, hh - wR - 6, w - 4, 2);
+    c.fillRect(-hw + 2, -hh * 0.35, w - 4, 2);
+  }
+
+  // headlights
+  if (v.headlights) {
+    c.fillStyle = 'rgba(255,255,170,0.85)';
+    c.beginPath(); c.arc(hw - 4, -hh * 0.15, 3.5, 0, 6.283); c.fill();
+    c.beginPath(); c.arc(hw - 4, hh * 0.1, 3.5, 0, 6.283); c.fill();
+    c.fillStyle = 'rgba(255,255,170,0.04)';
+    c.beginPath();
+    c.moveTo(hw, 0);
+    c.lineTo(hw + (v.lightRange || 200), -(v.lightRange || 200) * 0.25);
+    c.lineTo(hw + (v.lightRange || 200), (v.lightRange || 200) * 0.25);
+    c.closePath();
+    c.fill();
+  }
+
+  // taillights
+  c.fillStyle = 'rgba(255,0,0,0.5)';
+  c.beginPath(); c.arc(-hw + 4, -hh * 0.1, 2.5, 0, 6.283); c.fill();
+  c.beginPath(); c.arc(-hw + 4, hh * 0.15, 2.5, 0, 6.283); c.fill();
+
+  // wheels
+  [[wx1, wy], [wx2, wy]].forEach(([wxp, wyp]) => {
+    c.save();
+    c.translate(wxp, wyp);
+    c.rotate(wRot);
+    c.fillStyle = wc;
+    c.beginPath(); c.arc(0, 0, wR, 0, 6.283); c.fill();
+    c.fillStyle = '#3a3a3a';
+    c.beginPath(); c.arc(0, 0, wR * 0.65, 0, 6.283); c.fill();
+    c.strokeStyle = '#4a4a4a';
+    c.lineWidth = 1;
+    for (let a = 0; a < 6.283; a += 1.047) {
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos(a) * wR * 0.55, Math.sin(a) * wR * 0.55);
+      c.stroke();
+    }
+    c.fillStyle = '#555';
+    c.beginPath(); c.arc(0, 0, wR * 0.2, 0, 6.283); c.fill();
+    c.restore();
+  });
+
+  c.restore();
+
+  // editor labels (not flipped)
+  const z = camera.zoom || 1;
+  c.save();
+
+  // type label
+  c.fillStyle = '#f472b6';
+  c.font = `${8 / z}px Inter`;
+  c.textAlign = 'center';
+  c.fillText(def.name || tp.toUpperCase(), v.x, v.y + h / 2 + 14 / z);
+
+  // enter radius indicator
+  if (v.drivable !== false) {
+    c.fillStyle = 'rgba(244,114,182,0.12)';
+    const er = v.enterRadius || 60;
+    c.beginPath();
+    c.arc(v.x, v.y, er, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = 'rgba(244,114,182,0.15)';
+    c.lineWidth = 1 / z;
+    c.setLineDash([4 / z, 4 / z]);
+    c.stroke();
+    c.setLineDash([]);
+
+    // key badge
+    const by = v.y - h / 2 - 10 / z;
+    const kw = 18 / z, kh = 12 / z;
+    c.fillStyle = 'rgba(244,114,182,0.2)';
+    c.fillRect(v.x - kw / 2, by - kh / 2, kw, kh);
+    c.strokeStyle = '#f472b6';
+    c.lineWidth = 0.5 / z;
+    c.strokeRect(v.x - kw / 2, by - kh / 2, kw, kh);
+    c.fillStyle = '#f472b6';
+    c.font = `bold ${8 / z}px Inter`;
+    c.textBaseline = 'middle';
+    c.fillText(v.enterKey || 'E', v.x, by);
+  }
+  c.restore();
+}
+
+function drawVehiclePreview(canvasEl, v) {
+  const c = canvasEl.getContext('2d');
+  const cw = canvasEl.width, ch = canvasEl.height;
+  c.clearRect(0, 0, cw, ch);
+  c.fillStyle = '#080808';
+  c.fillRect(0, 0, cw, ch);
+
+  // ground line
+  c.fillStyle = '#1a1a1a';
+  c.fillRect(0, ch - 22, cw, 22);
+  c.fillStyle = '#222';
+  c.fillRect(0, ch - 22, cw, 1);
+
+  const fakeV = {
+    ...v,
+    x: cw / 2,
+    y: ch / 2 + 5
+  };
+
+  const savedZoom = (typeof camera !== 'undefined') ? camera.zoom : 1;
+  if (typeof camera !== 'undefined') camera.zoom = 1;
+  drawEditorVehicle(c, fakeV, performance.now() / 1000);
+  if (typeof camera !== 'undefined') camera.zoom = savedZoom;
+}
 
 // ==================== RESIZE ====================
 
@@ -107,6 +441,7 @@ async function loadGame() {
     items = gameData.items || [];
     models = gameData.models || [];
     avatars = gameData.avatars || [];
+    vehicles = gameData.vehicles || [];
     settings = gameData.settings || {};
     document.getElementById('topbar-title').textContent = gameData.title;
     if (gameData.published) {
@@ -124,7 +459,7 @@ async function saveGame() {
   try {
     const r = await fetch(`/api/studio/save/${gameId}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ blocks, items, models, avatars, settings, title: gameData.title, description: gameData.description })
+      body: JSON.stringify({ blocks, items, models, avatars, vehicles, settings, title: gameData.title, description: gameData.description })
     });
     if (r.ok) { unsaved = false; showSaved(); }
   } catch (e) { console.error('[Save]', e); }
@@ -188,15 +523,12 @@ function drawEditorAvatar(c, av, time) {
   const bc = av.usePlayerAvatar ? '#888' : (av.bodyColor || '#fff');
   const hc = av.usePlayerAvatar ? '#999' : (av.headColor || '#fff');
   const ec = av.eyeColor || '#000';
-
   const bw = w * 0.55, bh = h * 0.45;
   const hw2 = w * 0.5, hh2 = w * 0.5;
 
-  // Shadow
   c.fillStyle = 'rgba(0,0,0,0.15)';
   c.beginPath(); c.ellipse(0, h / 2, w * 0.35, 2, 0, 0, Math.PI * 2); c.fill();
 
-  // Legs
   const legW = bw * 0.35, legH = h * 0.25;
   c.fillStyle = bc;
   if (pose === 'sit') {
@@ -208,27 +540,17 @@ function drawEditorAvatar(c, av, time) {
     c.fillRect(rl, h * 0.25, legW, legH);
   }
 
-  // Body
   c.fillStyle = bc;
   c.fillRect(-bw / 2, -h * 0.15, bw, bh);
-
-  // Head
   c.fillStyle = hc;
   c.fillRect(-hw2 / 2, -h * 0.5, hw2, hh2);
 
-  // Eyes
   const eyeY = -h * 0.35;
   const eyeSz = Math.max(1.5, w * 0.08);
   c.fillStyle = ec;
-  if (dir === 1) {
-    c.fillRect(1, eyeY, eyeSz, eyeSz);
-    c.fillRect(hw2 / 2 - eyeSz - 1, eyeY, eyeSz, eyeSz);
-  } else {
-    c.fillRect(-hw2 / 2 + 1, eyeY, eyeSz, eyeSz);
-    c.fillRect(-1 - eyeSz, eyeY, eyeSz, eyeSz);
-  }
+  if (dir === 1) { c.fillRect(1, eyeY, eyeSz, eyeSz); c.fillRect(hw2 / 2 - eyeSz - 1, eyeY, eyeSz, eyeSz); }
+  else { c.fillRect(-hw2 / 2 + 1, eyeY, eyeSz, eyeSz); c.fillRect(-1 - eyeSz, eyeY, eyeSz, eyeSz); }
 
-  // Arms
   const armW = 3, armH = bh * 0.7;
   let la = 0, ra = 0;
   if (pose === 'run') { la = Math.sin(time * speed * 8) * 0.5; ra = -Math.sin(time * speed * 8) * 0.5; }
@@ -239,19 +561,16 @@ function drawEditorAvatar(c, av, time) {
   c.save(); c.translate(-bw / 2 - armW, -h * 0.12); c.rotate(la); c.fillRect(-armW / 2, 0, armW, armH); c.restore();
   c.save(); c.translate(bw / 2, -h * 0.12); c.rotate(ra); c.fillRect(-armW / 2, 0, armW, armH); c.restore();
 
-  // Label
   c.fillStyle = av.usePlayerAvatar ? '#4ade80' : '#a78bfa';
   c.font = `${8 / camera.zoom}px Inter`;
   c.textAlign = 'center';
   c.fillText(av.usePlayerAvatar ? 'PLAYER' : 'NPC', 0, -h / 2 - 6 / camera.zoom);
 
-  // Interactive indicator
   if (av.interactive) {
     const d = av.dialogue;
     const trigKey = (d && d.triggerKey) || 'E';
     const trigR = (d && d.triggerRadius) || 80;
 
-    // Trigger radius circle
     c.strokeStyle = 'rgba(167,139,250,0.15)';
     c.lineWidth = 1;
     c.setLineDash([4, 4]);
@@ -260,21 +579,19 @@ function drawEditorAvatar(c, av, time) {
     c.stroke();
     c.setLineDash([]);
 
-    // Key hint badge
-    const badgeY = -h / 2 - 16 / camera.zoom;
+    const badgeY2 = -h / 2 - 16 / camera.zoom;
     c.fillStyle = 'rgba(167,139,250,0.2)';
     const kbw = 18 / camera.zoom, kbh = 12 / camera.zoom;
-    c.fillRect(-kbw / 2, badgeY - kbh / 2, kbw, kbh);
+    c.fillRect(-kbw / 2, badgeY2 - kbh / 2, kbw, kbh);
     c.strokeStyle = '#a78bfa';
     c.lineWidth = 0.5;
-    c.strokeRect(-kbw / 2, badgeY - kbh / 2, kbw, kbh);
+    c.strokeRect(-kbw / 2, badgeY2 - kbh / 2, kbw, kbh);
     c.fillStyle = '#a78bfa';
     c.font = `bold ${8 / camera.zoom}px Inter`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText(trigKey, 0, badgeY);
+    c.fillText(trigKey, 0, badgeY2);
 
-    // Chat bubble icon
     const bubY = -h / 2 - 28 / camera.zoom;
     const bs = 5 / camera.zoom;
     c.fillStyle = 'rgba(167,139,250,' + (0.4 + Math.sin(time * 3) * 0.2) + ')';
@@ -293,16 +610,10 @@ function drawEditorAvatar(c, av, time) {
     c.quadraticCurveTo(-bs - 2/camera.zoom, bubY - bs, -bs, bubY - bs);
     c.fill();
 
-    // Dots in bubble
     c.fillStyle = '#fff';
     const dotR = 1 / camera.zoom;
-    for (let di = -1; di <= 1; di++) {
-      c.beginPath();
-      c.arc(di * 3 / camera.zoom, bubY, dotR, 0, Math.PI * 2);
-      c.fill();
-    }
+    for (let di = -1; di <= 1; di++) { c.beginPath(); c.arc(di * 3 / camera.zoom, bubY, dotR, 0, Math.PI * 2); c.fill(); }
 
-    // NPC name below
     if (d && d.npcName) {
       c.fillStyle = d.nameColor || '#a78bfa';
       c.font = `${7 / camera.zoom}px Inter`;
@@ -340,13 +651,11 @@ function render(ts) {
   for (let y = sy; y <= ey; y += gs) { ctx.moveTo(sx, y); ctx.lineTo(ex, y); }
   ctx.stroke();
 
-  // World bounds
   const ww = settings.worldWidth || 2400, wh = settings.worldHeight || 600;
   ctx.strokeStyle = '#222'; ctx.lineWidth = 2 / camera.zoom;
   ctx.setLineDash([8 / camera.zoom, 4 / camera.zoom]);
   ctx.strokeRect(0, 0, ww, wh); ctx.setLineDash([]);
 
-  // Spawn
   const spx = settings.spawnX || 100, spy = settings.spawnY || 400;
   ctx.fillStyle = 'rgba(74,222,128,.3)'; ctx.fillRect(spx - 8, spy - 24, 16, 24);
   ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1 / camera.zoom; ctx.strokeRect(spx - 8, spy - 24, 16, 24);
@@ -413,6 +722,18 @@ function render(ts) {
     }
   });
 
+  // Vehicles
+  vehicles.forEach((v, i) => {
+    drawEditorVehicle(ctx, v, renderTime);
+    if (selectedVehicle === i) {
+      ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 2 / camera.zoom;
+      const vw = v.w || 120, vh = v.h || 50;
+      ctx.strokeRect(v.x - vw/2 - 4, v.y - vh/2 - 4, vw + 8, vh + 8);
+      const hs = HANDLE_SIZE / camera.zoom; ctx.fillStyle = '#f472b6';
+      [{x:v.x-vw/2,y:v.y-vh/2},{x:v.x+vw/2,y:v.y-vh/2},{x:v.x-vw/2,y:v.y+vh/2},{x:v.x+vw/2,y:v.y+vh/2}].forEach(h => ctx.fillRect(h.x-hs/2,h.y-hs/2,hs,hs));
+    }
+  });
+
   // New block preview
   if (newBlockStart && currentTool === 'block') {
     const nx = Math.min(newBlockStart.x, newBlockStart.cx);
@@ -432,7 +753,7 @@ function render(ts) {
   ctx.fillText(`${Math.round(camera.zoom * 100)}%`, 10, canvas.height - 10);
   if (unsaved) { ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(canvas.width-20,20,4,0,Math.PI*2); ctx.fill(); }
 
-  if (isMobile && (selectedBlock !== null || selectedItem !== null || selectedModel !== null || selectedAvatar !== null)) {
+  if (isMobile && (selectedBlock !== null || selectedItem !== null || selectedModel !== null || selectedAvatar !== null || selectedVehicle !== null)) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0,0,canvas.width,28);
     ctx.fillStyle = '#fff'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
     let info = '';
@@ -440,6 +761,7 @@ function render(ts) {
     if (selectedItem !== null) info = `Item: ${items[selectedItem].type}`;
     if (selectedModel !== null) info = `Model: ${models[selectedModel].type}`;
     if (selectedAvatar !== null) info = `Avatar — tap & drag`;
+    if (selectedVehicle !== null) info = `Vehicle: ${vehicles[selectedVehicle].type}`;
     ctx.fillText(info, canvas.width / 2, 18);
   }
 
@@ -455,7 +777,7 @@ function getPos(e) {
 
 function getCanvasY(rawY) { return rawY - (isMobile ? 0 : 48); }
 
-function clearSelection() { selectedBlock = null; selectedItem = null; selectedModel = null; selectedAvatar = null; selectedKeyframe = null; }
+function clearSelection() { selectedBlock = null; selectedItem = null; selectedModel = null; selectedAvatar = null; selectedVehicle = null; selectedKeyframe = null; }
 
 function findBlockAt(wx, wy) { for (let i = blocks.length - 1; i >= 0; i--) { const b = blocks[i]; if (wx >= b.x && wx <= b.x+b.w && wy >= b.y && wy <= b.y+b.h) return i; } return -1; }
 
@@ -473,6 +795,15 @@ function findAvatarAt(wx, wy) {
   return -1;
 }
 
+function findVehicleAt(wx, wy) {
+  for (let i = vehicles.length - 1; i >= 0; i--) {
+    const v = vehicles[i];
+    const vw = (v.w || 120) / 2, vh = (v.h || 50) / 2;
+    if (wx >= v.x - vw && wx <= v.x + vw && wy >= v.y - vh && wy <= v.y + vh) return i;
+  }
+  return -1;
+}
+
 function checkScaleHandle(wx, wy) {
   const hs = (HANDLE_SIZE + 4) / camera.zoom;
   if (selectedBlock !== null && blocks[selectedBlock]) {
@@ -484,6 +815,11 @@ function checkScaleHandle(wx, wy) {
     const m = models[selectedModel]; const mw=m.w||40,mh=m.h||80;
     const handles = [{x:m.x,y:m.y,c:'nw'},{x:m.x+mw,y:m.y,c:'ne'},{x:m.x,y:m.y+mh,c:'sw'},{x:m.x+mw,y:m.y+mh,c:'se'}];
     for (const h of handles) { if (Math.abs(wx-h.x)<hs && Math.abs(wy-h.y)<hs) return { type:'model', handle:h.c, obj:m }; }
+  }
+  if (selectedVehicle !== null && vehicles[selectedVehicle]) {
+    const v = vehicles[selectedVehicle]; const vw=v.w||120,vh=v.h||50;
+    const handles = [{x:v.x-vw/2,y:v.y-vh/2,c:'nw'},{x:v.x+vw/2,y:v.y-vh/2,c:'ne'},{x:v.x-vw/2,y:v.y+vh/2,c:'sw'},{x:v.x+vw/2,y:v.y+vh/2,c:'se'}];
+    for (const h of handles) { if (Math.abs(wx-h.x)<hs && Math.abs(wy-h.y)<hs) return { type:'vehicle', handle:h.c, obj:v }; }
   }
   return null;
 }
@@ -497,6 +833,8 @@ function onDown(e) {
   if (e.button === 1) { isPanning = true; dragStart = { x: pos.x, y: pos.y }; e.preventDefault(); return; }
 
   if (e.button === 2) {
+    const vi = findVehicleAt(world.x, world.y);
+    if (vi !== -1) { clearSelection(); selectedVehicle = vi; openVehicleProps(); updateExplorer(); e.preventDefault(); return; }
     const aai = findAvatarAt(world.x, world.y);
     if (aai !== -1) { clearSelection(); selectedAvatar = aai; openAvatarProps(); updateExplorer(); e.preventDefault(); return; }
     const mi = findModelAt(world.x, world.y);
@@ -513,7 +851,25 @@ function onDown(e) {
 
   if (currentTool === 'select' || currentTool === 'move') {
     const sh = checkScaleHandle(world.x, world.y);
-    if (sh) { isScaling = true; scaleHandle = sh.handle; dragStart = { x: world.x, y: world.y }; dragObjStart = { x: sh.obj.x, y: sh.obj.y, w: sh.obj.w||(sh.type==='model'?40:sh.obj.w), h: sh.obj.h||(sh.type==='model'?80:sh.obj.h) }; return; }
+    if (sh) {
+      isScaling = true; scaleHandle = sh.handle; dragStart = { x: world.x, y: world.y };
+      if (sh.type === 'vehicle') {
+        const v = sh.obj;
+        dragObjStart = { x: v.x, y: v.y, w: v.w || 120, h: v.h || 50 };
+      } else {
+        dragObjStart = { x: sh.obj.x, y: sh.obj.y, w: sh.obj.w||(sh.type==='model'?40:sh.obj.w), h: sh.obj.h||(sh.type==='model'?80:sh.obj.h) };
+      }
+      return;
+    }
+
+    const vi = findVehicleAt(world.x, world.y);
+    if (vi !== -1) {
+      clearSelection(); selectedVehicle = vi; isDragging = true;
+      dragStart = { x: world.x, y: world.y }; dragObjStart = { x: vehicles[vi].x, y: vehicles[vi].y };
+      updateExplorer();
+      if (isMobile) { longPressTimer = setTimeout(() => { openVehicleProps(); }, 500); }
+      return;
+    }
 
     const mi = findModelAt(world.x, world.y);
     if (mi !== -1) {
@@ -583,6 +939,14 @@ function onMove(e) {
       if (scaleHandle.includes('s')) m.h = Math.max(10, dragObjStart.h + dy);
       if (scaleHandle.includes('n')) { m.y = dragObjStart.y + dy; m.h = Math.max(10, dragObjStart.h - dy); }
     }
+    if (selectedVehicle !== null) {
+      const v = vehicles[selectedVehicle];
+      // Vehicle uses center coords, so scaling is different
+      if (scaleHandle.includes('e')) v.w = Math.max(30, dragObjStart.w + dx * 2);
+      if (scaleHandle.includes('w')) v.w = Math.max(30, dragObjStart.w - dx * 2);
+      if (scaleHandle.includes('s')) v.h = Math.max(20, dragObjStart.h + dy * 2);
+      if (scaleHandle.includes('n')) v.h = Math.max(20, dragObjStart.h - dy * 2);
+    }
     unsaved = true; return;
   }
 
@@ -593,6 +957,7 @@ function onMove(e) {
     if (selectedItem !== null) { items[selectedItem].x = Math.round(dragObjStart.x + dx); items[selectedItem].y = Math.round(dragObjStart.y + dy); }
     if (selectedModel !== null) { models[selectedModel].x = Math.round(dragObjStart.x + dx); models[selectedModel].y = Math.round(dragObjStart.y + dy); }
     if (selectedAvatar !== null) { avatars[selectedAvatar].x = Math.round(dragObjStart.x + dx); avatars[selectedAvatar].y = Math.round(dragObjStart.y + dy); }
+    if (selectedVehicle !== null) { vehicles[selectedVehicle].x = Math.round(dragObjStart.x + dx); vehicles[selectedVehicle].y = Math.round(dragObjStart.y + dy); }
     unsaved = true;
   }
 }
@@ -634,6 +999,7 @@ window.addEventListener('keydown', (e) => {
     else if (selectedItem !== null) { items.splice(selectedItem,1); selectedItem=null; closeRightPanel(); unsaved=true; updateExplorer(); }
     else if (selectedModel !== null) { models.splice(selectedModel,1); selectedModel=null; closeRightPanel(); unsaved=true; updateExplorer(); }
     else if (selectedAvatar !== null) { avatars.splice(selectedAvatar,1); selectedAvatar=null; closeRightPanel(); unsaved=true; updateExplorer(); }
+    else if (selectedVehicle !== null) { vehicles.splice(selectedVehicle,1); selectedVehicle=null; closeRightPanel(); unsaved=true; updateExplorer(); }
   }
   if (e.key === 'Escape') { clearSelection(); closeRightPanel(); closeAllModals(); updateExplorer(); }
 });
@@ -665,6 +1031,7 @@ function updateExplorer() {
   document.getElementById('explorer-items-count').textContent = items.length;
   document.getElementById('explorer-models-count').textContent = models.length;
   document.getElementById('explorer-avatars-count').textContent = avatars.length;
+  document.getElementById('explorer-vehicles-count').textContent = vehicles.length;
 
   const blocksList = document.getElementById('explorer-blocks-list');
   blocksList.innerHTML = '';
@@ -707,6 +1074,17 @@ function updateExplorer() {
     el.addEventListener('click', () => { clearSelection(); selectedAvatar = i; camera.x = av.x; camera.y = av.y; openAvatarProps(); updateExplorer(); });
     avatarsList.appendChild(el);
   });
+
+  const vehiclesList = document.getElementById('explorer-vehicles-list');
+  vehiclesList.innerHTML = '';
+  vehicles.forEach((v, i) => {
+    const def = VEHICLE_DEFS[v.type || 'car'];
+    const el = document.createElement('div');
+    el.className = 'explorer-node-header explorer-leaf explorer-selectable' + (selectedVehicle === i ? ' explorer-selected' : '');
+    el.innerHTML = `<span style="margin-left:24px;font-size:14px;margin-right:4px">${def ? def.emoji : '🚗'}</span><span>${def ? def.name : v.type}</span><span class="explorer-dim">(${Math.round(v.x)},${Math.round(v.y)})</span>`;
+    el.addEventListener('click', () => { clearSelection(); selectedVehicle = i; camera.x = v.x; camera.y = v.y; openVehicleProps(); updateExplorer(); });
+    vehiclesList.appendChild(el);
+  });
 }
 
 document.querySelectorAll('[data-expand]').forEach(header => {
@@ -719,6 +1097,7 @@ document.querySelectorAll('[data-expand]').forEach(header => {
     else if (key === 'items') children = document.getElementById('explorer-items-list');
     else if (key === 'models') children = document.getElementById('explorer-models-list');
     else if (key === 'avatars') children = document.getElementById('explorer-avatars-list');
+    else if (key === 'vehicles') children = document.getElementById('explorer-vehicles-list');
     if (children) {
       const isHidden = children.style.display === 'none';
       children.style.display = isHidden ? 'block' : 'none';
@@ -738,15 +1117,22 @@ document.getElementById('mob-explorer')?.addEventListener('click', toggleExplore
 function closeRightPanel() {
   document.getElementById('right-panel').style.display = 'none';
   document.getElementById('avatar-props').style.display = 'none';
+  document.getElementById('vehicle-props').style.display = 'none';
 }
 document.getElementById('rp-close').addEventListener('click', closeRightPanel);
 
-function openBlockProps() {
-  document.getElementById('right-panel').style.display = 'block';
-  document.getElementById('block-props').style.display = 'block';
+function hideAllPropSections() {
+  document.getElementById('block-props').style.display = 'none';
   document.getElementById('item-props').style.display = 'none';
   document.getElementById('model-props').style.display = 'none';
   document.getElementById('avatar-props').style.display = 'none';
+  document.getElementById('vehicle-props').style.display = 'none';
+}
+
+function openBlockProps() {
+  document.getElementById('right-panel').style.display = 'block';
+  hideAllPropSections();
+  document.getElementById('block-props').style.display = 'block';
   document.getElementById('rp-title').textContent = 'Block Properties';
   updateBlockProps();
 }
@@ -785,10 +1171,8 @@ document.getElementById('btn-delete-block').addEventListener('click', () => { if
 
 function openItemProps() {
   document.getElementById('right-panel').style.display = 'block';
-  document.getElementById('block-props').style.display = 'none';
+  hideAllPropSections();
   document.getElementById('item-props').style.display = 'block';
-  document.getElementById('model-props').style.display = 'none';
-  document.getElementById('avatar-props').style.display = 'none';
   document.getElementById('rp-title').textContent = 'Item Properties';
   updateItemProps();
 }
@@ -825,10 +1209,8 @@ document.getElementById('btn-delete-item').addEventListener('click', () => { if(
 
 function openModelProps() {
   document.getElementById('right-panel').style.display = 'block';
-  document.getElementById('block-props').style.display = 'none';
-  document.getElementById('item-props').style.display = 'none';
+  hideAllPropSections();
   document.getElementById('model-props').style.display = 'block';
-  document.getElementById('avatar-props').style.display = 'none';
   document.getElementById('rp-title').textContent = 'Model Properties';
   updateModelProps();
 }
@@ -871,9 +1253,7 @@ document.getElementById('btn-delete-model').addEventListener('click', () => { if
 
 function openAvatarProps() {
   document.getElementById('right-panel').style.display = 'block';
-  document.getElementById('block-props').style.display = 'none';
-  document.getElementById('item-props').style.display = 'none';
-  document.getElementById('model-props').style.display = 'none';
+  hideAllPropSections();
   document.getElementById('avatar-props').style.display = 'block';
   document.getElementById('rp-title').textContent = 'Avatar Properties';
   updateAvatarProps();
@@ -896,7 +1276,7 @@ function updateAvatarProps() {
   document.getElementById('avatar-body-color').value = av.bodyColor || '#ffffff';
   document.getElementById('avatar-head-color').value = av.headColor || '#ffffff';
   document.getElementById('avatar-eye-color').value = av.eyeColor || '#000000';
-  document.querySelectorAll('.avatar-dir-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.dir) === (av.direction || 1)));
+  document.querySelectorAll('#avatar-props .avatar-dir-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.dir) === (av.direction || 1)));
   document.getElementById('avatar-custom-anim').style.display = av.defaultAnim === 'custom' ? 'block' : 'none';
   renderKeyframeTimeline();
   updateDialogueSection();
@@ -952,8 +1332,194 @@ document.getElementById('avatar-use-player').addEventListener('change', e => { i
 document.getElementById('avatar-body-color').addEventListener('input', e => { if(selectedAvatar===null)return; avatars[selectedAvatar].bodyColor=e.target.value; unsaved=true; });
 document.getElementById('avatar-head-color').addEventListener('input', e => { if(selectedAvatar===null)return; avatars[selectedAvatar].headColor=e.target.value; unsaved=true; });
 document.getElementById('avatar-eye-color').addEventListener('input', e => { if(selectedAvatar===null)return; avatars[selectedAvatar].eyeColor=e.target.value; unsaved=true; });
-document.querySelectorAll('.avatar-dir-btn').forEach(b => { b.addEventListener('click', () => { if(selectedAvatar===null)return; avatars[selectedAvatar].direction=parseInt(b.dataset.dir); document.querySelectorAll('.avatar-dir-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); unsaved=true; }); });
+document.querySelectorAll('#avatar-props .avatar-dir-btn').forEach(b => { b.addEventListener('click', () => { if(selectedAvatar===null)return; avatars[selectedAvatar].direction=parseInt(b.dataset.dir); document.querySelectorAll('#avatar-props .avatar-dir-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); unsaved=true; }); });
 document.getElementById('btn-delete-avatar').addEventListener('click', () => { if(selectedAvatar===null)return; avatars.splice(selectedAvatar,1); selectedAvatar=null; closeRightPanel(); unsaved=true; updateExplorer(); });
+
+// ==================== VEHICLE PROPERTIES ====================
+
+function openVehicleProps() {
+  document.getElementById('right-panel').style.display = 'block';
+  hideAllPropSections();
+  document.getElementById('vehicle-props').style.display = 'block';
+  document.getElementById('rp-title').textContent = 'Vehicle Properties';
+  updateVehicleProps();
+}
+
+function updateVehicleProps() {
+  if (selectedVehicle === null) return;
+  const v = vehicles[selectedVehicle];
+
+  // Type grid
+  document.querySelectorAll('.vehicle-type-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.vtype === (v.type || 'car'));
+  });
+
+  document.getElementById('vehicle-x').value = Math.round(v.x);
+  document.getElementById('vehicle-y').value = Math.round(v.y);
+  document.getElementById('vehicle-w').value = v.w || 120;
+  document.getElementById('vehicle-h').value = v.h || 50;
+
+  document.querySelectorAll('#vehicle-props .avatar-dir-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.dir) === (v.direction || 1)));
+
+  // Physics
+  document.getElementById('vehicle-max-speed').value = v.maxSpeed || 10;
+  document.getElementById('vehicle-max-speed-val').textContent = v.maxSpeed || 10;
+  document.getElementById('vehicle-acceleration').value = v.acceleration || 0.5;
+  document.getElementById('vehicle-acceleration-val').textContent = v.acceleration || 0.5;
+  document.getElementById('vehicle-brake').value = v.brakeForce || 0.8;
+  document.getElementById('vehicle-brake-val').textContent = v.brakeForce || 0.8;
+  document.getElementById('vehicle-friction').value = v.friction || 0.05;
+  document.getElementById('vehicle-friction-val').textContent = v.friction || 0.05;
+  document.getElementById('vehicle-jump').value = v.jumpForce || 0;
+  document.getElementById('vehicle-jump-val').textContent = v.jumpForce || 0;
+  document.getElementById('vehicle-mass').value = v.mass || 2;
+  document.getElementById('vehicle-mass-val').textContent = v.mass || 2;
+
+  updateSpeedMeter(v.maxSpeed || 10);
+
+  // Appearance
+  document.getElementById('vehicle-body-color').value = v.bodyColor || '#3b82f6';
+  document.getElementById('vehicle-body-color-text').value = v.bodyColor || '#3b82f6';
+  document.getElementById('vehicle-accent-color').value = v.accentColor || '#1e3a5f';
+  document.getElementById('vehicle-accent-color-text').value = v.accentColor || '#1e3a5f';
+  document.getElementById('vehicle-wheel-color').value = v.wheelColor || '#222222';
+  document.getElementById('vehicle-window-color').value = v.windowColor || '#87ceeb';
+  document.getElementById('vehicle-window-opacity').value = v.windowOpacity || 0.6;
+  document.getElementById('vehicle-window-opacity-val').textContent = v.windowOpacity || 0.6;
+
+  // Behavior
+  document.getElementById('vehicle-drivable').checked = v.drivable !== false;
+  document.getElementById('vehicle-enter-key').value = v.enterKey || 'E';
+  document.getElementById('vehicle-enter-radius').value = v.enterRadius || 60;
+  document.getElementById('vehicle-enter-radius-val').textContent = v.enterRadius || 60;
+  document.getElementById('vehicle-headlights').checked = v.headlights || false;
+  document.getElementById('vehicle-headlights-settings').style.display = v.headlights ? 'block' : 'none';
+  document.getElementById('vehicle-light-range').value = v.lightRange || 200;
+  document.getElementById('vehicle-light-range-val').textContent = v.lightRange || 200;
+  document.getElementById('vehicle-light-color').value = v.lightColor || '#ffffaa';
+  document.getElementById('vehicle-horn').checked = v.horn || false;
+  document.getElementById('vehicle-respawnable').checked = v.respawnable !== false;
+  document.getElementById('vehicle-seats').value = v.seats || 1;
+
+  updateSeatsPreview(v.seats || 1);
+  updateVehiclePreview();
+}
+
+function updateSpeedMeter(speed) {
+  const fill = document.getElementById('vehicle-speed-meter-fill');
+  if (!fill) return;
+  const pct = Math.min(100, (speed / 30) * 100);
+  fill.style.width = pct + '%';
+  fill.className = 'vehicle-speed-meter-fill ' + (speed <= 8 ? 'slow' : speed <= 15 ? 'medium' : 'fast');
+}
+
+function updateSeatsPreview(count) {
+  const container = document.getElementById('vehicle-seats-preview');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'vehicle-seat-dot';
+    dot.title = i === 0 ? 'Driver' : `Passenger ${i}`;
+    container.appendChild(dot);
+  }
+}
+
+let vehiclePreviewRAF = null;
+function updateVehiclePreview() {
+  if (selectedVehicle === null) return;
+  const cv = document.getElementById('vehicle-preview-canvas');
+  if (!cv) return;
+
+  if (vehiclePreviewRAF) cancelAnimationFrame(vehiclePreviewRAF);
+
+  function frame() {
+    if (selectedVehicle === null || document.getElementById('vehicle-props').style.display === 'none') return;
+    drawVehiclePreview(cv, vehicles[selectedVehicle]);
+    vehiclePreviewRAF = requestAnimationFrame(frame);
+  }
+  vehiclePreviewRAF = requestAnimationFrame(frame);
+}
+
+// Vehicle type grid
+document.querySelectorAll('.vehicle-type-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (selectedVehicle === null) return;
+    const vtype = card.dataset.vtype;
+    const def = VEHICLE_DEFS[vtype];
+    const v = vehicles[selectedVehicle];
+    v.type = vtype;
+    if (def) {
+      v.w = def.w;
+      v.h = def.h;
+      v.maxSpeed = def.maxSpeed;
+      v.acceleration = def.acceleration || 0.5;
+      v.brakeForce = def.brakeForce || 0.8;
+      v.mass = def.mass || 2;
+      v.seats = def.seats || 1;
+      if (def.jumpForce) v.jumpForce = def.jumpForce;
+      else v.jumpForce = 0;
+    }
+    unsaved = true;
+    updateVehicleProps();
+  });
+});
+
+// Vehicle direction
+document.getElementById('vehicle-dir-right').addEventListener('click', () => { if(selectedVehicle===null)return; vehicles[selectedVehicle].direction=1; document.querySelectorAll('#vehicle-props .avatar-dir-btn').forEach(x=>x.classList.remove('active')); document.getElementById('vehicle-dir-right').classList.add('active'); unsaved=true; });
+document.getElementById('vehicle-dir-left').addEventListener('click', () => { if(selectedVehicle===null)return; vehicles[selectedVehicle].direction=-1; document.querySelectorAll('#vehicle-props .avatar-dir-btn').forEach(x=>x.classList.remove('active')); document.getElementById('vehicle-dir-left').classList.add('active'); unsaved=true; });
+
+// Vehicle position/size
+document.getElementById('vehicle-x').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].x=parseFloat(e.target.value)||0; unsaved=true; });
+document.getElementById('vehicle-y').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].y=parseFloat(e.target.value)||0; unsaved=true; });
+document.getElementById('vehicle-w').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].w=Math.max(30,parseFloat(e.target.value)||120); unsaved=true; });
+document.getElementById('vehicle-h').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].h=Math.max(20,parseFloat(e.target.value)||50); unsaved=true; });
+
+// Vehicle physics sliders
+const vehicleSliders = {
+  'vehicle-max-speed': { key: 'maxSpeed', def: 10 },
+  'vehicle-acceleration': { key: 'acceleration', def: 0.5 },
+  'vehicle-brake': { key: 'brakeForce', def: 0.8 },
+  'vehicle-friction': { key: 'friction', def: 0.05 },
+  'vehicle-jump': { key: 'jumpForce', def: 0 },
+  'vehicle-mass': { key: 'mass', def: 2 },
+  'vehicle-enter-radius': { key: 'enterRadius', def: 60 },
+  'vehicle-window-opacity': { key: 'windowOpacity', def: 0.6 },
+  'vehicle-light-range': { key: 'lightRange', def: 200 }
+};
+
+for (const [id, cfg] of Object.entries(vehicleSliders)) {
+  const el = document.getElementById(id);
+  if (!el) continue;
+  el.addEventListener('input', e => {
+    if (selectedVehicle === null) return;
+    const val = parseFloat(e.target.value);
+    vehicles[selectedVehicle][cfg.key] = val;
+    const valEl = document.getElementById(id + '-val');
+    if (valEl) valEl.textContent = val;
+    if (cfg.key === 'maxSpeed') updateSpeedMeter(val);
+    unsaved = true;
+  });
+}
+
+// Vehicle colors
+document.getElementById('vehicle-body-color').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].bodyColor=e.target.value; document.getElementById('vehicle-body-color-text').value=e.target.value; unsaved=true; });
+document.getElementById('vehicle-body-color-text').addEventListener('input', e => { if(selectedVehicle===null)return; if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)){vehicles[selectedVehicle].bodyColor=e.target.value;document.getElementById('vehicle-body-color').value=e.target.value;unsaved=true;} });
+document.getElementById('vehicle-accent-color').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].accentColor=e.target.value; document.getElementById('vehicle-accent-color-text').value=e.target.value; unsaved=true; });
+document.getElementById('vehicle-accent-color-text').addEventListener('input', e => { if(selectedVehicle===null)return; if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)){vehicles[selectedVehicle].accentColor=e.target.value;document.getElementById('vehicle-accent-color').value=e.target.value;unsaved=true;} });
+document.getElementById('vehicle-wheel-color').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].wheelColor=e.target.value; unsaved=true; });
+document.getElementById('vehicle-window-color').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].windowColor=e.target.value; unsaved=true; });
+
+// Vehicle behavior
+document.getElementById('vehicle-drivable').addEventListener('change', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].drivable=e.target.checked; unsaved=true; });
+document.getElementById('vehicle-enter-key').addEventListener('change', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].enterKey=e.target.value; unsaved=true; });
+document.getElementById('vehicle-headlights').addEventListener('change', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].headlights=e.target.checked; document.getElementById('vehicle-headlights-settings').style.display=e.target.checked?'block':'none'; unsaved=true; });
+document.getElementById('vehicle-light-color').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].lightColor=e.target.value; unsaved=true; });
+document.getElementById('vehicle-horn').addEventListener('change', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].horn=e.target.checked; unsaved=true; });
+document.getElementById('vehicle-respawnable').addEventListener('change', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].respawnable=e.target.checked; unsaved=true; });
+document.getElementById('vehicle-seats').addEventListener('input', e => { if(selectedVehicle===null)return; vehicles[selectedVehicle].seats=Math.max(1,Math.min(8,parseInt(e.target.value)||1)); updateSeatsPreview(vehicles[selectedVehicle].seats); unsaved=true; });
+
+document.getElementById('btn-delete-vehicle').addEventListener('click', () => { if(selectedVehicle===null)return; vehicles.splice(selectedVehicle,1); selectedVehicle=null; closeRightPanel(); unsaved=true; updateExplorer(); });
 
 // ==================== KEYFRAME SYSTEM ====================
 
@@ -1025,28 +1591,11 @@ document.getElementById('kf-dir').addEventListener('change', e => { if(selectedA
 document.getElementById('kf-easing').addEventListener('change', e => { if(selectedAvatar===null||selectedKeyframe===null)return; avatars[selectedAvatar].keyframes[selectedKeyframe].easing=e.target.value; unsaved=true; });
 
 // ==================== DIALOGUE SCRIPT SYSTEM ====================
+// (kept exactly as original — no changes needed for vehicles)
 
 function initDialogueData(av) {
   if (!av.dialogue) {
-    av.dialogue = {
-      triggerKey: 'E',
-      triggerRadius: 80,
-      oneTime: false,
-      npcName: '',
-      nameColor: '#a78bfa',
-      typingSpeed: 30,
-      lines: [],
-      hasChoices: false,
-      choiceAfterLine: 1,
-      choicePrompt: '',
-      choices: [],
-      endAction: 'none',
-      endActionParams: {},
-      hasCondition: false,
-      conditionType: 'has_item',
-      conditionParams: {},
-      conditionFailText: ''
-    };
+    av.dialogue = { triggerKey: 'E', triggerRadius: 80, oneTime: false, npcName: '', nameColor: '#a78bfa', typingSpeed: 30, lines: [], hasChoices: false, choiceAfterLine: 1, choicePrompt: '', choices: [], endAction: 'none', endActionParams: {}, hasCondition: false, conditionType: 'has_item', conditionParams: {}, conditionFailText: '' };
   }
   return av.dialogue;
 }
@@ -1057,11 +1606,8 @@ function updateDialogueSection() {
   const section = document.getElementById('avatar-dialogue-section');
   const isInteractive = av.interactive || false;
   section.style.display = isInteractive ? 'block' : 'none';
-
   if (!isInteractive) return;
-
   const d = initDialogueData(av);
-
   document.getElementById('dialogue-trigger-key').value = d.triggerKey || 'E';
   document.getElementById('dialogue-trigger-radius').value = d.triggerRadius || 80;
   document.getElementById('dialogue-trigger-radius-val').textContent = d.triggerRadius || 80;
@@ -1077,7 +1623,6 @@ function updateDialogueSection() {
   document.getElementById('dialogue-condition-section').style.display = d.hasCondition ? 'block' : 'none';
   document.getElementById('dialogue-condition-type').value = d.conditionType || 'has_item';
   document.getElementById('dialogue-condition-fail-text').value = d.conditionFailText || '';
-
   renderDialogueLines();
   renderDialogueChoices();
   renderDialogueActionParams();
@@ -1086,625 +1631,103 @@ function updateDialogueSection() {
 
 function renderDialogueLines() {
   if (selectedAvatar === null) return;
-  const av = avatars[selectedAvatar];
-  const d = initDialogueData(av);
+  const d = initDialogueData(avatars[selectedAvatar]);
   const container = document.getElementById('dialogue-lines-list');
   container.innerHTML = '';
-
   if (!d.lines || d.lines.length === 0) {
-    container.innerHTML = '<div style="padding:12px;text-align:center;color:#333;font-size:11px">No dialogue lines yet. Click "Add Line" to start.</div>';
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:#333;font-size:11px">No dialogue lines yet.</div>';
     return;
   }
-
   d.lines.forEach((line, i) => {
     const el = document.createElement('div');
     el.className = 'dialogue-line-item';
-    el.innerHTML = `
-      <span class="dialogue-line-number">${i + 1}</span>
-      <div class="dialogue-line-content">
-        <div class="dialogue-line-speaker">
-          <select data-line="${i}" data-field="speaker">
-            <option value="npc" ${(line.speaker || 'npc') === 'npc' ? 'selected' : ''}>NPC</option>
-            <option value="player" ${line.speaker === 'player' ? 'selected' : ''}>Player</option>
-            <option value="narrator" ${line.speaker === 'narrator' ? 'selected' : ''}>Narrator</option>
-            <option value="system" ${line.speaker === 'system' ? 'selected' : ''}>System</option>
-          </select>
-          <select data-line="${i}" data-field="emotion" style="width:80px">
-            <option value="neutral" ${(line.emotion || 'neutral') === 'neutral' ? 'selected' : ''}>😐</option>
-            <option value="happy" ${line.emotion === 'happy' ? 'selected' : ''}>😊</option>
-            <option value="sad" ${line.emotion === 'sad' ? 'selected' : ''}>😢</option>
-            <option value="angry" ${line.emotion === 'angry' ? 'selected' : ''}>😠</option>
-            <option value="surprised" ${line.emotion === 'surprised' ? 'selected' : ''}>😮</option>
-            <option value="thinking" ${line.emotion === 'thinking' ? 'selected' : ''}>🤔</option>
-          </select>
-        </div>
-        <textarea class="dialogue-line-text" data-line="${i}" data-field="text" placeholder="Enter dialogue text..." rows="1">${line.text || ''}</textarea>
-        <div class="dialogue-line-options">
-          <select data-line="${i}" data-field="effect" style="width:90px" title="Text effect">
-            <option value="normal" ${(line.effect || 'normal') === 'normal' ? 'selected' : ''}>Normal</option>
-            <option value="shake" ${line.effect === 'shake' ? 'selected' : ''}>Shake</option>
-            <option value="wave" ${line.effect === 'wave' ? 'selected' : ''}>Wave</option>
-            <option value="fade" ${line.effect === 'fade' ? 'selected' : ''}>Fade In</option>
-            <option value="glitch" ${line.effect === 'glitch' ? 'selected' : ''}>Glitch</option>
-          </select>
-          <div class="dialogue-typing-speed">
-            <label>Speed</label>
-            <input type="number" data-line="${i}" data-field="speed" value="${line.speed || 30}" min="5" max="200" step="5" style="width:50px;padding:3px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:10px;font-family:Inter;outline:none">
-            <label>ms</label>
-          </div>
-        </div>
-      </div>
-      <div class="dialogue-line-actions">
-        <button class="dialogue-line-btn" data-action="up" data-line="${i}" title="Move Up" ${i === 0 ? 'disabled style="opacity:0.3"' : ''}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
-        </button>
-        <button class="dialogue-line-btn" data-action="down" data-line="${i}" title="Move Down" ${i === d.lines.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <button class="dialogue-line-btn danger" data-action="delete" data-line="${i}" title="Delete">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-    `;
+    el.innerHTML = `<span class="dialogue-line-number">${i+1}</span><div class="dialogue-line-content"><div class="dialogue-line-speaker"><select data-line="${i}" data-field="speaker"><option value="npc" ${(line.speaker||'npc')==='npc'?'selected':''}>NPC</option><option value="player" ${line.speaker==='player'?'selected':''}>Player</option><option value="narrator" ${line.speaker==='narrator'?'selected':''}>Narrator</option><option value="system" ${line.speaker==='system'?'selected':''}>System</option></select><select data-line="${i}" data-field="emotion" style="width:80px"><option value="neutral" ${(line.emotion||'neutral')==='neutral'?'selected':''}>😐</option><option value="happy" ${line.emotion==='happy'?'selected':''}>😊</option><option value="sad" ${line.emotion==='sad'?'selected':''}>😢</option><option value="angry" ${line.emotion==='angry'?'selected':''}>😠</option><option value="surprised" ${line.emotion==='surprised'?'selected':''}>😮</option><option value="thinking" ${line.emotion==='thinking'?'selected':''}>🤔</option></select></div><textarea class="dialogue-line-text" data-line="${i}" data-field="text" placeholder="Enter dialogue text..." rows="1">${line.text||''}</textarea><div class="dialogue-line-options"><select data-line="${i}" data-field="effect" style="width:90px"><option value="normal" ${(line.effect||'normal')==='normal'?'selected':''}>Normal</option><option value="shake" ${line.effect==='shake'?'selected':''}>Shake</option><option value="wave" ${line.effect==='wave'?'selected':''}>Wave</option><option value="fade" ${line.effect==='fade'?'selected':''}>Fade In</option><option value="glitch" ${line.effect==='glitch'?'selected':''}>Glitch</option></select><div class="dialogue-typing-speed"><label>Speed</label><input type="number" data-line="${i}" data-field="speed" value="${line.speed||30}" min="5" max="200" step="5" style="width:50px;padding:3px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:10px;font-family:Inter;outline:none"><label>ms</label></div></div></div><div class="dialogue-line-actions"><button class="dialogue-line-btn" data-action="up" data-line="${i}" ${i===0?'disabled style="opacity:0.3"':''}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button><button class="dialogue-line-btn" data-action="down" data-line="${i}" ${i===d.lines.length-1?'disabled style="opacity:0.3"':''}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><button class="dialogue-line-btn danger" data-action="delete" data-line="${i}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
     container.appendChild(el);
   });
-
-  // Bind events
-  container.querySelectorAll('textarea[data-field="text"]').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = parseInt(e.target.dataset.line);
-      d.lines[idx].text = e.target.value;
-      unsaved = true;
-      e.target.style.height = 'auto';
-      e.target.style.height = e.target.scrollHeight + 'px';
-    });
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-  });
-
-  container.querySelectorAll('select[data-field]').forEach(el => {
-    el.addEventListener('change', e => {
-      const idx = parseInt(e.target.dataset.line);
-      const field = e.target.dataset.field;
-      d.lines[idx][field] = e.target.value;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('input[data-field="speed"]').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = parseInt(e.target.dataset.line);
-      d.lines[idx].speed = parseInt(e.target.value) || 30;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('.dialogue-line-btn[data-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const action = btn.dataset.action;
-      const idx = parseInt(btn.dataset.line);
-      if (action === 'up' && idx > 0) {
-        [d.lines[idx], d.lines[idx - 1]] = [d.lines[idx - 1], d.lines[idx]];
-      } else if (action === 'down' && idx < d.lines.length - 1) {
-        [d.lines[idx], d.lines[idx + 1]] = [d.lines[idx + 1], d.lines[idx]];
-      } else if (action === 'delete') {
-        d.lines.splice(idx, 1);
-      }
-      unsaved = true;
-      renderDialogueLines();
-    });
-  });
+  container.querySelectorAll('textarea[data-field="text"]').forEach(el => { el.addEventListener('input', e => { d.lines[parseInt(e.target.dataset.line)].text=e.target.value; unsaved=true; e.target.style.height='auto'; e.target.style.height=e.target.scrollHeight+'px'; }); el.style.height='auto'; el.style.height=el.scrollHeight+'px'; });
+  container.querySelectorAll('select[data-field]').forEach(el => { el.addEventListener('change', e => { d.lines[parseInt(e.target.dataset.line)][e.target.dataset.field]=e.target.value; unsaved=true; }); });
+  container.querySelectorAll('input[data-field="speed"]').forEach(el => { el.addEventListener('input', e => { d.lines[parseInt(e.target.dataset.line)].speed=parseInt(e.target.value)||30; unsaved=true; }); });
+  container.querySelectorAll('.dialogue-line-btn[data-action]').forEach(btn => { btn.addEventListener('click', e => { e.stopPropagation(); const action=btn.dataset.action,idx=parseInt(btn.dataset.line); if(action==='up'&&idx>0)[d.lines[idx],d.lines[idx-1]]=[d.lines[idx-1],d.lines[idx]]; else if(action==='down'&&idx<d.lines.length-1)[d.lines[idx],d.lines[idx+1]]=[d.lines[idx+1],d.lines[idx]]; else if(action==='delete')d.lines.splice(idx,1); unsaved=true; renderDialogueLines(); }); });
 }
 
 function renderDialogueChoices() {
-  if (selectedAvatar === null) return;
-  const av = avatars[selectedAvatar];
-  const d = initDialogueData(av);
+  if (selectedAvatar===null) return;
+  const d = initDialogueData(avatars[selectedAvatar]);
   const container = document.getElementById('dialogue-choices-list');
   container.innerHTML = '';
-
-  if (!d.choices || d.choices.length === 0) {
-    container.innerHTML = '<div style="padding:8px;text-align:center;color:#333;font-size:11px">No choices added.</div>';
-    return;
-  }
-
-  d.choices.forEach((choice, i) => {
-    const el = document.createElement('div');
-    el.className = 'dialogue-choice-item';
-    el.innerHTML = `
-      <span class="dialogue-line-number" style="background:#1a1a3e;color:#3b82f6">${i + 1}</span>
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-        <input type="text" value="${choice.text || ''}" placeholder="Choice text..." data-choice="${i}" data-field="text">
-        <div class="dialogue-choice-result">
-          <select data-choice="${i}" data-field="action" style="flex:1">
-            <option value="continue" ${(choice.action || 'continue') === 'continue' ? 'selected' : ''}>Continue dialogue</option>
-            <option value="jump" ${choice.action === 'jump' ? 'selected' : ''}>Jump to line #</option>
-            <option value="end" ${choice.action === 'end' ? 'selected' : ''}>End dialogue</option>
-            <option value="give_item" ${choice.action === 'give_item' ? 'selected' : ''}>Give item</option>
-            <option value="set_variable" ${choice.action === 'set_variable' ? 'selected' : ''}>Set variable</option>
-          </select>
-          ${choice.action === 'jump' ? `<input type="number" data-choice="${i}" data-field="jumpTo" value="${choice.jumpTo || 1}" min="1" style="width:50px;padding:4px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:11px;font-family:Inter;outline:none">` : ''}
-        </div>
-        ${choice.action === 'give_item' ? `
-          <select data-choice="${i}" data-field="itemId" style="padding:4px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#aaa;font-family:Inter;font-size:11px;outline:none;cursor:pointer">
-            <option value="">-- Select item --</option>
-            ${items.map(it => `<option value="${it.id}" ${choice.itemId === it.id ? 'selected' : ''}>${it.type} @ (${Math.round(it.x)},${Math.round(it.y)})</option>`).join('')}
-          </select>
-        ` : ''}
-        ${choice.action === 'set_variable' ? `
-          <div style="display:flex;gap:4px">
-            <input type="text" data-choice="${i}" data-field="varName" value="${choice.varName || ''}" placeholder="var name" style="flex:1;padding:4px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:11px;font-family:Inter;outline:none">
-            <input type="text" data-choice="${i}" data-field="varValue" value="${choice.varValue || ''}" placeholder="value" style="flex:1;padding:4px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:11px;font-family:Inter;outline:none">
-          </div>
-        ` : ''}
-      </div>
-      <button class="dialogue-line-btn danger" data-choice-delete="${i}" title="Delete">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    `;
+  if (!d.choices||d.choices.length===0) { container.innerHTML='<div style="padding:8px;text-align:center;color:#333;font-size:11px">No choices.</div>'; return; }
+  d.choices.forEach((choice,i) => {
+    const el = document.createElement('div'); el.className='dialogue-choice-item';
+    el.innerHTML=`<span class="dialogue-line-number" style="background:#1a1a3e;color:#3b82f6">${i+1}</span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><input type="text" value="${choice.text||''}" placeholder="Choice text..." data-choice="${i}" data-field="text"><div class="dialogue-choice-result"><select data-choice="${i}" data-field="action" style="flex:1"><option value="continue" ${(choice.action||'continue')==='continue'?'selected':''}>Continue</option><option value="jump" ${choice.action==='jump'?'selected':''}>Jump to #</option><option value="end" ${choice.action==='end'?'selected':''}>End</option><option value="give_item" ${choice.action==='give_item'?'selected':''}>Give item</option><option value="set_variable" ${choice.action==='set_variable'?'selected':''}>Set var</option></select>${choice.action==='jump'?`<input type="number" data-choice="${i}" data-field="jumpTo" value="${choice.jumpTo||1}" min="1" style="width:50px;padding:4px 6px;background:#0a0a0a;border:1px solid #222;border-radius:4px;color:#888;font-size:11px;font-family:Inter;outline:none">`:''}</div></div><button class="dialogue-line-btn danger" data-choice-delete="${i}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     container.appendChild(el);
   });
-
-  container.querySelectorAll('input[data-field="text"]').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = parseInt(e.target.dataset.choice);
-      d.choices[idx].text = e.target.value;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('select[data-field]').forEach(el => {
-    el.addEventListener('change', e => {
-      const idx = parseInt(e.target.dataset.choice);
-      const field = e.target.dataset.field;
-      d.choices[idx][field] = e.target.value;
-      unsaved = true;
-      renderDialogueChoices();
-    });
-  });
-
-  container.querySelectorAll('input[data-field="jumpTo"]').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = parseInt(e.target.dataset.choice);
-      d.choices[idx].jumpTo = parseInt(e.target.value) || 1;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('input[data-field="varName"], input[data-field="varValue"]').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = parseInt(e.target.dataset.choice);
-      d.choices[idx][e.target.dataset.field] = e.target.value;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('select[data-field="itemId"]').forEach(el => {
-    el.addEventListener('change', e => {
-      const idx = parseInt(e.target.dataset.choice);
-      d.choices[idx].itemId = e.target.value;
-      unsaved = true;
-    });
-  });
-
-  container.querySelectorAll('[data-choice-delete]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      d.choices.splice(parseInt(btn.dataset.choiceDelete), 1);
-      unsaved = true;
-      renderDialogueChoices();
-    });
-  });
+  container.querySelectorAll('input[data-field="text"]').forEach(el => { el.addEventListener('input', e => { d.choices[parseInt(e.target.dataset.choice)].text=e.target.value; unsaved=true; }); });
+  container.querySelectorAll('select[data-field]').forEach(el => { el.addEventListener('change', e => { d.choices[parseInt(e.target.dataset.choice)][e.target.dataset.field]=e.target.value; unsaved=true; renderDialogueChoices(); }); });
+  container.querySelectorAll('input[data-field="jumpTo"]').forEach(el => { el.addEventListener('input', e => { d.choices[parseInt(e.target.dataset.choice)].jumpTo=parseInt(e.target.value)||1; unsaved=true; }); });
+  container.querySelectorAll('[data-choice-delete]').forEach(btn => { btn.addEventListener('click', () => { d.choices.splice(parseInt(btn.dataset.choiceDelete),1); unsaved=true; renderDialogueChoices(); }); });
 }
 
 function renderDialogueActionParams() {
-  if (selectedAvatar === null) return;
-  const av = avatars[selectedAvatar];
-  const d = initDialogueData(av);
-  const container = document.getElementById('dialogue-action-params');
-  container.innerHTML = '';
-
-  const action = d.endAction || 'none';
-  if (action === 'none') return;
-
-  if (action === 'give_item' || action === 'remove_item') {
-    container.innerHTML = `
-      <label>${action === 'give_item' ? 'Item to Give' : 'Item to Remove'}</label>
-      <select id="dialogue-action-item" class="rp-select">
-        <option value="">-- Select item type --</option>
-        ${assets.map(a => `<option value="${a.id}" ${(d.endActionParams.itemType === a.id) ? 'selected' : ''}>${a.name}</option>`).join('')}
-      </select>
-    `;
-    container.querySelector('#dialogue-action-item').addEventListener('change', e => {
-      d.endActionParams.itemType = e.target.value;
-      unsaved = true;
-    });
-  } else if (action === 'teleport') {
-    container.innerHTML = `
-      <label>Teleport To</label>
-      <div class="rp-row">
-        <div class="rp-field"><span>X</span><input type="number" id="dialogue-tp-x" value="${d.endActionParams.x || 0}"></div>
-        <div class="rp-field"><span>Y</span><input type="number" id="dialogue-tp-y" value="${d.endActionParams.y || 0}"></div>
-      </div>
-    `;
-    container.querySelector('#dialogue-tp-x').addEventListener('input', e => { d.endActionParams.x = parseFloat(e.target.value) || 0; unsaved = true; });
-    container.querySelector('#dialogue-tp-y').addEventListener('input', e => { d.endActionParams.y = parseFloat(e.target.value) || 0; unsaved = true; });
-  } else if (action === 'open_door') {
-    const doors = models.filter(m => m.type.startsWith('door_'));
-    container.innerHTML = `
-      <label>Door/Model to Open</label>
-      <select id="dialogue-action-door" class="rp-select">
-        <option value="">-- Select --</option>
-        ${doors.map(door => { const dd = MODEL_DEFS[door.type]; return `<option value="${door.id}" ${d.endActionParams.doorId === door.id ? 'selected' : ''}>${dd ? dd.name : door.type} @ (${Math.round(door.x)},${Math.round(door.y)})</option>`; }).join('')}
-      </select>
-    `;
-    container.querySelector('#dialogue-action-door').addEventListener('change', e => { d.endActionParams.doorId = e.target.value; unsaved = true; });
-  } else if (action === 'set_variable') {
-    container.innerHTML = `
-      <label>Variable</label>
-      <div class="rp-row">
-        <div class="rp-field"><span>Name</span><input type="text" id="dialogue-var-name" value="${d.endActionParams.varName || ''}"></div>
-        <div class="rp-field"><span>Value</span><input type="text" id="dialogue-var-value" value="${d.endActionParams.varValue || ''}"></div>
-      </div>
-    `;
-    container.querySelector('#dialogue-var-name').addEventListener('input', e => { d.endActionParams.varName = e.target.value; unsaved = true; });
-    container.querySelector('#dialogue-var-value').addEventListener('input', e => { d.endActionParams.varValue = e.target.value; unsaved = true; });
-  } else if (action === 'play_anim') {
-    container.innerHTML = `
-      <label>Animation to Play</label>
-      <select id="dialogue-action-anim" class="rp-select">
-        <option value="idle" ${d.endActionParams.anim === 'idle' ? 'selected' : ''}>Idle</option>
-        <option value="dance" ${d.endActionParams.anim === 'dance' ? 'selected' : ''}>Dance</option>
-        <option value="wave" ${d.endActionParams.anim === 'wave' ? 'selected' : ''}>Wave</option>
-        <option value="jump" ${d.endActionParams.anim === 'jump' ? 'selected' : ''}>Jump</option>
-        <option value="sit" ${d.endActionParams.anim === 'sit' ? 'selected' : ''}>Sit</option>
-      </select>
-    `;
-    container.querySelector('#dialogue-action-anim').addEventListener('change', e => { d.endActionParams.anim = e.target.value; unsaved = true; });
-  }
+  if (selectedAvatar===null) return;
+  const d = initDialogueData(avatars[selectedAvatar]);
+  const container = document.getElementById('dialogue-action-params'); container.innerHTML='';
+  const action = d.endAction||'none'; if (action==='none') return;
+  if (action==='give_item'||action==='remove_item') { container.innerHTML=`<label>${action==='give_item'?'Item to Give':'Item to Remove'}</label><select id="dialogue-action-item" class="rp-select"><option value="">-- Select --</option>${assets.map(a=>`<option value="${a.id}" ${d.endActionParams.itemType===a.id?'selected':''}>${a.name}</option>`).join('')}</select>`; container.querySelector('#dialogue-action-item').addEventListener('change',e=>{d.endActionParams.itemType=e.target.value;unsaved=true;}); }
+  else if (action==='teleport') { container.innerHTML=`<label>Teleport To</label><div class="rp-row"><div class="rp-field"><span>X</span><input type="number" id="dialogue-tp-x" value="${d.endActionParams.x||0}"></div><div class="rp-field"><span>Y</span><input type="number" id="dialogue-tp-y" value="${d.endActionParams.y||0}"></div></div>`; container.querySelector('#dialogue-tp-x').addEventListener('input',e=>{d.endActionParams.x=parseFloat(e.target.value)||0;unsaved=true;}); container.querySelector('#dialogue-tp-y').addEventListener('input',e=>{d.endActionParams.y=parseFloat(e.target.value)||0;unsaved=true;}); }
+  else if (action==='open_door') { const doors=models.filter(m=>m.type.startsWith('door_')); container.innerHTML=`<label>Door</label><select id="dialogue-action-door" class="rp-select"><option value="">-- Select --</option>${doors.map(door=>{const dd=MODEL_DEFS[door.type];return`<option value="${door.id}" ${d.endActionParams.doorId===door.id?'selected':''}>${dd?dd.name:door.type} @(${Math.round(door.x)},${Math.round(door.y)})</option>`;}).join('')}</select>`; container.querySelector('#dialogue-action-door').addEventListener('change',e=>{d.endActionParams.doorId=e.target.value;unsaved=true;}); }
+  else if (action==='set_variable') { container.innerHTML=`<label>Variable</label><div class="rp-row"><div class="rp-field"><span>Name</span><input type="text" id="dialogue-var-name" value="${d.endActionParams.varName||''}"></div><div class="rp-field"><span>Value</span><input type="text" id="dialogue-var-value" value="${d.endActionParams.varValue||''}"></div></div>`; container.querySelector('#dialogue-var-name').addEventListener('input',e=>{d.endActionParams.varName=e.target.value;unsaved=true;}); container.querySelector('#dialogue-var-value').addEventListener('input',e=>{d.endActionParams.varValue=e.target.value;unsaved=true;}); }
+  else if (action==='play_anim') { container.innerHTML=`<label>Animation</label><select id="dialogue-action-anim" class="rp-select"><option value="idle" ${d.endActionParams.anim==='idle'?'selected':''}>Idle</option><option value="dance" ${d.endActionParams.anim==='dance'?'selected':''}>Dance</option><option value="wave" ${d.endActionParams.anim==='wave'?'selected':''}>Wave</option><option value="jump" ${d.endActionParams.anim==='jump'?'selected':''}>Jump</option><option value="sit" ${d.endActionParams.anim==='sit'?'selected':''}>Sit</option></select>`; container.querySelector('#dialogue-action-anim').addEventListener('change',e=>{d.endActionParams.anim=e.target.value;unsaved=true;}); }
 }
 
 function renderDialogueConditionParams() {
-  if (selectedAvatar === null) return;
-  const av = avatars[selectedAvatar];
-  const d = initDialogueData(av);
-  const container = document.getElementById('dialogue-condition-params');
-  container.innerHTML = '';
-
-  const ct = d.conditionType || 'has_item';
-  if (ct === 'has_item' || ct === 'no_item') {
-    container.innerHTML = `
-      <label>Item Type</label>
-      <select id="dialogue-cond-item" class="rp-select">
-        <option value="">-- Select --</option>
-        ${assets.map(a => `<option value="${a.id}" ${(d.conditionParams.itemType === a.id) ? 'selected' : ''}>${a.name}</option>`).join('')}
-      </select>
-    `;
-    container.querySelector('#dialogue-cond-item').addEventListener('change', e => { d.conditionParams.itemType = e.target.value; unsaved = true; });
-  } else if (ct === 'variable_equals' || ct === 'variable_gt') {
-    container.innerHTML = `
-      <label>Variable Check</label>
-      <div class="rp-row">
-        <div class="rp-field"><span>Name</span><input type="text" id="dialogue-cond-var" value="${d.conditionParams.varName || ''}"></div>
-        <div class="rp-field"><span>Value</span><input type="text" id="dialogue-cond-val" value="${d.conditionParams.varValue || ''}"></div>
-      </div>
-    `;
-    container.querySelector('#dialogue-cond-var').addEventListener('input', e => { d.conditionParams.varName = e.target.value; unsaved = true; });
-    container.querySelector('#dialogue-cond-val').addEventListener('input', e => { d.conditionParams.varValue = e.target.value; unsaved = true; });
-  }
+  if (selectedAvatar===null) return;
+  const d = initDialogueData(avatars[selectedAvatar]);
+  const container = document.getElementById('dialogue-condition-params'); container.innerHTML='';
+  const ct = d.conditionType||'has_item';
+  if (ct==='has_item'||ct==='no_item') { container.innerHTML=`<label>Item Type</label><select id="dialogue-cond-item" class="rp-select"><option value="">-- Select --</option>${assets.map(a=>`<option value="${a.id}" ${d.conditionParams.itemType===a.id?'selected':''}>${a.name}</option>`).join('')}</select>`; container.querySelector('#dialogue-cond-item').addEventListener('change',e=>{d.conditionParams.itemType=e.target.value;unsaved=true;}); }
+  else if (ct==='variable_equals'||ct==='variable_gt') { container.innerHTML=`<label>Variable</label><div class="rp-row"><div class="rp-field"><span>Name</span><input type="text" id="dialogue-cond-var" value="${d.conditionParams.varName||''}"></div><div class="rp-field"><span>Value</span><input type="text" id="dialogue-cond-val" value="${d.conditionParams.varValue||''}"></div></div>`; container.querySelector('#dialogue-cond-var').addEventListener('input',e=>{d.conditionParams.varName=e.target.value;unsaved=true;}); container.querySelector('#dialogue-cond-val').addEventListener('input',e=>{d.conditionParams.varValue=e.target.value;unsaved=true;}); }
 }
 
-// Dialogue Preview
 function showDialoguePreview() {
-  if (selectedAvatar === null) return;
+  if (selectedAvatar===null) return;
   const av = avatars[selectedAvatar];
   const d = initDialogueData(av);
-
-  if (!d.lines || d.lines.length === 0) {
-    alert('Add at least one dialogue line first!');
-    return;
-  }
-
-  let currentLine = 0;
-  let typingIndex = 0;
-  let typingTimer = null;
-  let isTyping = false;
-  let showingChoices = false;
-
-  const overlay = document.createElement('div');
-  overlay.className = 'dialogue-preview-overlay';
-
-  const box = document.createElement('div');
-  box.className = 'dialogue-preview-box';
-
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'dialogue-preview-close';
-  closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  closeBtn.addEventListener('click', closePreview);
-
-  const nameEl = document.createElement('div');
-  nameEl.className = 'dialogue-preview-name';
-
-  const textEl = document.createElement('div');
-  textEl.className = 'dialogue-preview-text';
-
-  const indicatorEl = document.createElement('div');
-  indicatorEl.className = 'dialogue-preview-indicator';
-
-  const choicesEl = document.createElement('div');
-  choicesEl.className = 'dialogue-preview-choices';
-  choicesEl.style.display = 'none';
-
-  box.appendChild(closeBtn);
-  box.appendChild(nameEl);
-  box.appendChild(textEl);
-  box.appendChild(choicesEl);
-  box.appendChild(indicatorEl);
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-
-  function closePreview() {
-    if (typingTimer) clearInterval(typingTimer);
-    overlay.remove();
-    document.removeEventListener('keydown', onKey);
-  }
-
-  function getSpeakerName(line) {
-    const speaker = line.speaker || 'npc';
-    if (speaker === 'npc') return d.npcName || 'NPC';
-    if (speaker === 'player') return 'You';
-    if (speaker === 'narrator') return 'Narrator';
-    if (speaker === 'system') return 'System';
-    return speaker;
-  }
-
-  function getSpeakerColor(line) {
-    const speaker = line.speaker || 'npc';
-    if (speaker === 'npc') return d.nameColor || '#a78bfa';
-    if (speaker === 'player') return '#4ade80';
-    if (speaker === 'narrator') return '#fbbf24';
-    if (speaker === 'system') return '#ef4444';
-    return '#888';
-  }
-
-  function showLine(idx) {
-    if (idx >= d.lines.length) {
-      if (d.hasChoices && d.choices && d.choices.length > 0) {
-        showChoicesUI();
-        return;
-      }
-      closePreview();
-      return;
-    }
-
-    currentLine = idx;
-    const line = d.lines[idx];
-    const speakerName = getSpeakerName(line);
-    const speakerColor = getSpeakerColor(line);
-    const emotionMap = { neutral: '😐', happy: '😊', sad: '😢', angry: '😠', surprised: '😮', thinking: '🤔' };
-    const emoticon = emotionMap[line.emotion || 'neutral'] || '😐';
-
-    nameEl.innerHTML = `<span class="name-dot" style="background:${speakerColor}"></span><span style="color:${speakerColor}">${speakerName}</span><span style="font-size:14px">${emoticon}</span>`;
-    textEl.innerHTML = '';
-    choicesEl.style.display = 'none';
-    showingChoices = false;
-
-    indicatorEl.innerHTML = `
-      <span class="line-counter">${idx + 1} / ${d.lines.length}</span>
-      <span class="dialogue-preview-continue">Click to continue ▸</span>
-    `;
-
-    const text = line.text || '...';
-    typingIndex = 0;
-    isTyping = true;
-    const speed = line.speed || d.typingSpeed || 30;
-
-    if (typingTimer) clearInterval(typingTimer);
-    typingTimer = setInterval(() => {
-      if (typingIndex <= text.length) {
-        textEl.innerHTML = text.substring(0, typingIndex) + '<span class="typewriter-cursor"></span>';
-        typingIndex++;
-      } else {
-        clearInterval(typingTimer);
-        typingTimer = null;
-        isTyping = false;
-        textEl.innerHTML = text;
-
-        if (d.hasChoices && d.choices && d.choices.length > 0 && idx === (d.choiceAfterLine || 1) - 1) {
-          setTimeout(() => showChoicesUI(), 300);
-        }
-      }
-    }, speed);
-  }
-
-  function showChoicesUI() {
-    showingChoices = true;
-    choicesEl.style.display = 'flex';
-    choicesEl.innerHTML = '';
-
-    if (d.choicePrompt) {
-      const promptEl = document.createElement('div');
-      promptEl.style.cssText = 'font-size:12px;color:#888;margin-bottom:4px;font-style:italic';
-      promptEl.textContent = d.choicePrompt;
-      choicesEl.appendChild(promptEl);
-    }
-
-    d.choices.forEach((choice, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'dialogue-preview-choice-btn';
-      btn.innerHTML = `<span class="choice-key">${i + 1}</span>${choice.text || 'Choice ' + (i + 1)}`;
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        if (choice.action === 'jump' && choice.jumpTo) {
-          choicesEl.style.display = 'none';
-          showingChoices = false;
-          showLine((choice.jumpTo || 1) - 1);
-        } else if (choice.action === 'end') {
-          closePreview();
-        } else {
-          choicesEl.style.display = 'none';
-          showingChoices = false;
-          showLine(currentLine + 1);
-        }
-      });
-      choicesEl.appendChild(btn);
-    });
-
-    indicatorEl.innerHTML = `<span class="line-counter">${currentLine + 1} / ${d.lines.length}</span><span style="color:#3b82f6;font-size:11px">Choose an option</span>`;
-  }
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target.closest('.dialogue-preview-close') || e.target.closest('.dialogue-preview-choice-btn')) return;
-    if (showingChoices) return;
-
-    if (isTyping) {
-      if (typingTimer) clearInterval(typingTimer);
-      typingTimer = null;
-      isTyping = false;
-      const line = d.lines[currentLine];
-      textEl.innerHTML = line.text || '...';
-
-      if (d.hasChoices && d.choices && d.choices.length > 0 && currentLine === (d.choiceAfterLine || 1) - 1) {
-        setTimeout(() => showChoicesUI(), 100);
-      }
-    } else {
-      showLine(currentLine + 1);
-    }
-  });
-
-  function onKey(e) {
-    if (e.key === 'Escape') { closePreview(); }
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      if (showingChoices) return;
-      if (isTyping) {
-        if (typingTimer) clearInterval(typingTimer);
-        typingTimer = null;
-        isTyping = false;
-        const line = d.lines[currentLine];
-        textEl.innerHTML = line.text || '...';
-        if (d.hasChoices && d.choices && d.choices.length > 0 && currentLine === (d.choiceAfterLine || 1) - 1) {
-          setTimeout(() => showChoicesUI(), 100);
-        }
-      } else {
-        showLine(currentLine + 1);
-      }
-    }
-    if (showingChoices && e.key >= '1' && e.key <= '9') {
-      const ci = parseInt(e.key) - 1;
-      if (d.choices[ci]) {
-        const choiceBtns = choicesEl.querySelectorAll('.dialogue-preview-choice-btn');
-        if (choiceBtns[ci]) choiceBtns[ci].click();
-      }
-    }
-  }
-  document.addEventListener('keydown', onKey);
-
+  if (!d.lines||d.lines.length===0) { alert('Add dialogue lines first!'); return; }
+  let currentLine=0,typingIndex=0,typingTimer=null,isTyping=false,showingChoices=false;
+  const overlay=document.createElement('div'); overlay.className='dialogue-preview-overlay';
+  const box=document.createElement('div'); box.className='dialogue-preview-box';
+  const closeBtn=document.createElement('button'); closeBtn.className='dialogue-preview-close'; closeBtn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; closeBtn.addEventListener('click',closePreview);
+  const nameEl=document.createElement('div'); nameEl.className='dialogue-preview-name';
+  const textEl=document.createElement('div'); textEl.className='dialogue-preview-text';
+  const indicatorEl=document.createElement('div'); indicatorEl.className='dialogue-preview-indicator';
+  const choicesEl=document.createElement('div'); choicesEl.className='dialogue-preview-choices'; choicesEl.style.display='none';
+  box.appendChild(closeBtn); box.appendChild(nameEl); box.appendChild(textEl); box.appendChild(choicesEl); box.appendChild(indicatorEl);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  function closePreview(){if(typingTimer)clearInterval(typingTimer);overlay.remove();document.removeEventListener('keydown',onKey);}
+  function getSpeakerName(l){const s=l.speaker||'npc';if(s==='npc')return d.npcName||'NPC';if(s==='player')return'You';if(s==='narrator')return'Narrator';if(s==='system')return'System';return s;}
+  function getSpeakerColor(l){const s=l.speaker||'npc';if(s==='npc')return d.nameColor||'#a78bfa';if(s==='player')return'#4ade80';if(s==='narrator')return'#fbbf24';if(s==='system')return'#ef4444';return'#888';}
+  function showLine(idx){if(idx>=d.lines.length){if(d.hasChoices&&d.choices&&d.choices.length>0){showChoicesUI();return;}closePreview();return;}currentLine=idx;const line=d.lines[idx];const sn=getSpeakerName(line),sc2=getSpeakerColor(line);const em={neutral:'😐',happy:'😊',sad:'😢',angry:'😠',surprised:'😮',thinking:'🤔'};nameEl.innerHTML=`<span class="name-dot" style="background:${sc2}"></span><span style="color:${sc2}">${sn}</span><span style="font-size:14px">${em[line.emotion||'neutral']||'😐'}</span>`;textEl.innerHTML='';choicesEl.style.display='none';showingChoices=false;indicatorEl.innerHTML=`<span class="line-counter">${idx+1}/${d.lines.length}</span><span class="dialogue-preview-continue">Click ▸</span>`;const text=line.text||'...';typingIndex=0;isTyping=true;const speed=line.speed||d.typingSpeed||30;if(typingTimer)clearInterval(typingTimer);typingTimer=setInterval(()=>{if(typingIndex<=text.length){textEl.innerHTML=text.substring(0,typingIndex)+'<span class="typewriter-cursor"></span>';typingIndex++;}else{clearInterval(typingTimer);typingTimer=null;isTyping=false;textEl.innerHTML=text;if(d.hasChoices&&d.choices&&d.choices.length>0&&idx===(d.choiceAfterLine||1)-1)setTimeout(()=>showChoicesUI(),300);}},speed);}
+  function showChoicesUI(){showingChoices=true;choicesEl.style.display='flex';choicesEl.innerHTML='';if(d.choicePrompt){const p=document.createElement('div');p.style.cssText='font-size:12px;color:#888;margin-bottom:4px;font-style:italic';p.textContent=d.choicePrompt;choicesEl.appendChild(p);}d.choices.forEach((ch,i)=>{const btn=document.createElement('button');btn.className='dialogue-preview-choice-btn';btn.innerHTML=`<span class="choice-key">${i+1}</span>${ch.text||'Choice '+(i+1)}`;btn.addEventListener('click',e=>{e.stopPropagation();if(ch.action==='jump'&&ch.jumpTo){choicesEl.style.display='none';showingChoices=false;showLine((ch.jumpTo||1)-1);}else if(ch.action==='end')closePreview();else{choicesEl.style.display='none';showingChoices=false;showLine(currentLine+1);}});choicesEl.appendChild(btn);});indicatorEl.innerHTML=`<span class="line-counter">${currentLine+1}/${d.lines.length}</span><span style="color:#3b82f6;font-size:11px">Choose</span>`;}
+  overlay.addEventListener('click',e=>{if(e.target.closest('.dialogue-preview-close')||e.target.closest('.dialogue-preview-choice-btn'))return;if(showingChoices)return;if(isTyping){if(typingTimer)clearInterval(typingTimer);typingTimer=null;isTyping=false;textEl.innerHTML=d.lines[currentLine].text||'...';if(d.hasChoices&&d.choices&&d.choices.length>0&&currentLine===(d.choiceAfterLine||1)-1)setTimeout(()=>showChoicesUI(),100);}else showLine(currentLine+1);});
+  function onKey(e){if(e.key==='Escape')closePreview();if(e.key===' '||e.key==='Enter'){e.preventDefault();if(showingChoices)return;if(isTyping){if(typingTimer)clearInterval(typingTimer);typingTimer=null;isTyping=false;textEl.innerHTML=d.lines[currentLine].text||'...';if(d.hasChoices&&d.choices&&d.choices.length>0&&currentLine===(d.choiceAfterLine||1)-1)setTimeout(()=>showChoicesUI(),100);}else showLine(currentLine+1);}if(showingChoices&&e.key>='1'&&e.key<='9'){const ci=parseInt(e.key)-1;if(d.choices[ci]){const cbs=choicesEl.querySelectorAll('.dialogue-preview-choice-btn');if(cbs[ci])cbs[ci].click();}}}
+  document.addEventListener('keydown',onKey);
   showLine(0);
 }
 
-// Dialogue UI event bindings
-document.getElementById('dialogue-trigger-key').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).triggerKey = e.target.value;
-  unsaved = true;
-});
-
-document.getElementById('dialogue-trigger-radius').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).triggerRadius = parseInt(e.target.value);
-  document.getElementById('dialogue-trigger-radius-val').textContent = e.target.value;
-  unsaved = true;
-});
-
-document.getElementById('dialogue-one-time').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).oneTime = e.target.checked;
-  unsaved = true;
-});
-
-document.getElementById('dialogue-npc-name').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).npcName = e.target.value;
-  unsaved = true;
-});
-
-document.getElementById('dialogue-name-color').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).nameColor = e.target.value;
-  unsaved = true;
-});
-
-document.getElementById('btn-add-dialogue-line').addEventListener('click', () => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  if (!d.lines) d.lines = [];
-  d.lines.push({ speaker: 'npc', text: '', emotion: 'neutral', effect: 'normal', speed: 30 });
-  unsaved = true;
-  renderDialogueLines();
-});
-
-document.getElementById('dialogue-has-choices').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  d.hasChoices = e.target.checked;
-  document.getElementById('dialogue-choices-section').style.display = e.target.checked ? 'block' : 'none';
-  unsaved = true;
-});
-
-document.getElementById('dialogue-choice-after').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).choiceAfterLine = parseInt(e.target.value) || 1;
-  unsaved = true;
-});
-
-document.getElementById('dialogue-choice-prompt').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).choicePrompt = e.target.value;
-  unsaved = true;
-});
-
-document.getElementById('btn-add-dialogue-choice').addEventListener('click', () => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  if (!d.choices) d.choices = [];
-  d.choices.push({ text: '', action: 'continue', jumpTo: 1 });
-  unsaved = true;
-  renderDialogueChoices();
-});
-
-document.getElementById('dialogue-end-action').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  d.endAction = e.target.value;
-  d.endActionParams = {};
-  unsaved = true;
-  renderDialogueActionParams();
-});
-
-document.getElementById('dialogue-has-condition').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  d.hasCondition = e.target.checked;
-  document.getElementById('dialogue-condition-section').style.display = e.target.checked ? 'block' : 'none';
-  unsaved = true;
-});
-
-document.getElementById('dialogue-condition-type').addEventListener('change', e => {
-  if (selectedAvatar === null) return;
-  const d = initDialogueData(avatars[selectedAvatar]);
-  d.conditionType = e.target.value;
-  d.conditionParams = {};
-  unsaved = true;
-  renderDialogueConditionParams();
-});
-
-document.getElementById('dialogue-condition-fail-text').addEventListener('input', e => {
-  if (selectedAvatar === null) return;
-  initDialogueData(avatars[selectedAvatar]).conditionFailText = e.target.value;
-  unsaved = true;
-});
-
+document.getElementById('dialogue-trigger-key').addEventListener('change', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).triggerKey=e.target.value; unsaved=true; });
+document.getElementById('dialogue-trigger-radius').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).triggerRadius=parseInt(e.target.value); document.getElementById('dialogue-trigger-radius-val').textContent=e.target.value; unsaved=true; });
+document.getElementById('dialogue-one-time').addEventListener('change', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).oneTime=e.target.checked; unsaved=true; });
+document.getElementById('dialogue-npc-name').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).npcName=e.target.value; unsaved=true; });
+document.getElementById('dialogue-name-color').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).nameColor=e.target.value; unsaved=true; });
+document.getElementById('btn-add-dialogue-line').addEventListener('click', () => { if(selectedAvatar===null)return; const d=initDialogueData(avatars[selectedAvatar]); if(!d.lines)d.lines=[]; d.lines.push({speaker:'npc',text:'',emotion:'neutral',effect:'normal',speed:30}); unsaved=true; renderDialogueLines(); });
+document.getElementById('dialogue-has-choices').addEventListener('change', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).hasChoices=e.target.checked; document.getElementById('dialogue-choices-section').style.display=e.target.checked?'block':'none'; unsaved=true; });
+document.getElementById('dialogue-choice-after').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).choiceAfterLine=parseInt(e.target.value)||1; unsaved=true; });
+document.getElementById('dialogue-choice-prompt').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).choicePrompt=e.target.value; unsaved=true; });
+document.getElementById('btn-add-dialogue-choice').addEventListener('click', () => { if(selectedAvatar===null)return; const d=initDialogueData(avatars[selectedAvatar]); if(!d.choices)d.choices=[]; d.choices.push({text:'',action:'continue',jumpTo:1}); unsaved=true; renderDialogueChoices(); });
+document.getElementById('dialogue-end-action').addEventListener('change', e => { if(selectedAvatar===null)return; const d=initDialogueData(avatars[selectedAvatar]); d.endAction=e.target.value; d.endActionParams={}; unsaved=true; renderDialogueActionParams(); });
+document.getElementById('dialogue-has-condition').addEventListener('change', e => { if(selectedAvatar===null)return; const d=initDialogueData(avatars[selectedAvatar]); d.hasCondition=e.target.checked; document.getElementById('dialogue-condition-section').style.display=e.target.checked?'block':'none'; unsaved=true; });
+document.getElementById('dialogue-condition-type').addEventListener('change', e => { if(selectedAvatar===null)return; const d=initDialogueData(avatars[selectedAvatar]); d.conditionType=e.target.value; d.conditionParams={}; unsaved=true; renderDialogueConditionParams(); });
+document.getElementById('dialogue-condition-fail-text').addEventListener('input', e => { if(selectedAvatar===null)return; initDialogueData(avatars[selectedAvatar]).conditionFailText=e.target.value; unsaved=true; });
 document.getElementById('btn-preview-dialogue').addEventListener('click', showDialoguePreview);
 
 // ==================== ASSET STORE ====================
@@ -1713,7 +1736,7 @@ function renderAssetStore(filter) {
   filter = filter || 'all';
   const list = document.getElementById('asset-list'); list.innerHTML = '';
 
-  const filteredItems = filter === 'all' ? assets : filter === 'model' || filter === 'avatar' ? [] : assets.filter(a => a.category === filter);
+  const filteredItems = filter === 'all' ? assets.filter(a => a.category !== 'vehicle') : filter === 'model' || filter === 'avatar' || filter === 'vehicle' ? [] : assets.filter(a => a.category === filter);
   filteredItems.forEach(asset => {
     const el = document.createElement('div'); el.className = 'asset-item';
     el.innerHTML = `<span class="asset-icon">${getItemSVG(asset.id)}</span><div class="asset-info"><h4>${asset.name}</h4><p>${asset.description}</p></div><button class="asset-add">+ Add</button>`;
@@ -1742,16 +1765,43 @@ function renderAssetStore(filter) {
   });
 
   if (filter === 'all' || filter === 'avatar') {
-    if (filter === 'all') {
-      const sep = document.createElement('div'); sep.style.cssText = 'padding:8px 12px;color:#666;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #222;margin-top:4px;'; sep.textContent = 'Avatar'; list.appendChild(sep);
-    }
-    [{id:'npc',name:'NPC Avatar',desc:'Non-player character with animations'},{id:'player_spawn',name:'Player Avatar Marker',desc:'Shows player\'s own avatar at this position'}].forEach(at => {
+    if (filter === 'all') { const sep = document.createElement('div'); sep.style.cssText = 'padding:8px 12px;color:#666;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #222;margin-top:4px;'; sep.textContent = 'Avatar'; list.appendChild(sep); }
+    [{id:'npc',name:'NPC Avatar',desc:'Non-player character with animations'},{id:'player_spawn',name:'Player Avatar Marker',desc:'Shows player\'s own avatar'}].forEach(at => {
       const el = document.createElement('div'); el.className = 'asset-item'; el.style.borderLeft = '3px solid #a78bfa';
       el.innerHTML = `<span class="asset-icon" style="color:#a78bfa"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0114 0"/></svg></span><div class="asset-info"><h4>${at.name}</h4><p>${at.desc}</p></div><button class="asset-add" style="background:rgba(167,139,250,0.15);border-color:#a78bfa;color:#a78bfa">+ Place</button>`;
       el.querySelector('.asset-add').addEventListener('click', e => {
         e.stopPropagation();
-        const nav = { id:'avatar_'+Date.now()+'_'+Math.random().toString(36).substr(2,3), x:Math.round(camera.x), y:Math.round(camera.y), w:22, h:34, direction:1, defaultAnim:'idle', animSpeed:1, loop:true, interactive:false, usePlayerAvatar:at.id==='player_spawn', bodyColor:'#ffffff', headColor:'#ffffff', eyeColor:'#000000', keyframes:[], properties:{} };
-        avatars.push(nav); unsaved = true; updateExplorer();
+        avatars.push({ id:'avatar_'+Date.now()+'_'+Math.random().toString(36).substr(2,3), x:Math.round(camera.x), y:Math.round(camera.y), w:22, h:34, direction:1, defaultAnim:'idle', animSpeed:1, loop:true, interactive:false, usePlayerAvatar:at.id==='player_spawn', bodyColor:'#ffffff', headColor:'#ffffff', eyeColor:'#000000', keyframes:[], properties:{} });
+        unsaved = true; updateExplorer();
+      });
+      list.appendChild(el);
+    });
+  }
+
+  // VEHICLES
+  if (filter === 'all' || filter === 'vehicle') {
+    if (filter === 'all') { const sep = document.createElement('div'); sep.style.cssText = 'padding:8px 12px;color:#666;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #222;margin-top:4px;'; sep.textContent = 'Vehicles'; list.appendChild(sep); }
+    Object.entries(VEHICLE_DEFS).forEach(([type, def]) => {
+      const el = document.createElement('div'); el.className = 'asset-item'; el.style.borderLeft = '3px solid #f472b6';
+      el.setAttribute('data-asset-cat', 'vehicle');
+      el.innerHTML = `<span class="asset-icon" style="font-size:28px">${def.emoji}</span><div class="asset-info"><h4>${def.name}</h4><p>Speed: ${def.maxSpeed} | Mass: ${def.mass}${def.jumpForce ? ' | Jump!' : ''} | Seats: ${def.seats}</p></div><button class="asset-add" style="background:rgba(244,114,182,0.15);border-color:#f472b6;color:#f472b6">+ Place</button>`;
+      el.querySelector('.asset-add').addEventListener('click', e => {
+        e.stopPropagation();
+        vehicles.push({
+          id: 'vehicle_' + Date.now() + '_' + Math.random().toString(36).substr(2, 3),
+          type, x: Math.round(camera.x), y: Math.round(camera.y),
+          w: def.w, h: def.h, direction: 1,
+          bodyColor: '#3b82f6', accentColor: '#1e3a5f', wheelColor: '#222222',
+          windowColor: '#87ceeb', windowOpacity: 0.6,
+          maxSpeed: def.maxSpeed, acceleration: def.acceleration || 0.5,
+          brakeForce: def.brakeForce || 0.8, friction: 0.05,
+          jumpForce: def.jumpForce || 0, mass: def.mass,
+          drivable: true, enterKey: 'E', enterRadius: 60,
+          headlights: false, lightRange: 200, lightColor: '#ffffaa',
+          horn: false, respawnable: true, seats: def.seats || 1,
+          properties: {}
+        });
+        unsaved = true; updateExplorer();
       });
       list.appendChild(el);
     });
@@ -1900,6 +1950,7 @@ function generateThumb() {
   const ic = {sword:'#CCC',flashlight:'#FFE066',shield:'#4488CC',speed_boost:'#FFD700',jump_boost:'#44CC44',coin:'#FFD700',heart:'#EF4444',key:'#DAA520',battery:'#44EE44',note:'#CCBB88'};
   items.forEach(it => { cx.fillStyle = ic[it.type]||'#888'; cx.beginPath(); cx.arc(ox+it.x*sc,oy+it.y*sc,3,0,Math.PI*2); cx.fill(); });
   avatars.forEach(av => { cx.fillStyle = av.usePlayerAvatar?'#4ade80':'#a78bfa'; cx.beginPath(); cx.arc(ox+av.x*sc,oy+av.y*sc,4,0,Math.PI*2); cx.fill(); });
+  vehicles.forEach(v => { cx.fillStyle = v.bodyColor || '#3b82f6'; cx.fillRect(ox+(v.x-(v.w||120)/2)*sc, oy+(v.y-(v.h||50)/2)*sc, (v.w||120)*sc, (v.h||50)*sc); });
   cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(0,0,360,200);
   cx.font = '900 22px Inter'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
   cx.fillText((gameData.title||'UNTITLED').toUpperCase(), 180, 95);

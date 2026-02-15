@@ -51,6 +51,7 @@ const gameSchema = new mongoose.Schema({
     items: { type: mongoose.Schema.Types.Mixed, default: {} },
     spawnItems: { type: Array, default: [] }, collectibleItems: { type: Array, default: [] },
     models: { type: Array, default: [] }, avatars: { type: Array, default: [] },
+    vehicles: { type: Array, default: [] },
     settings: { type: mongoose.Schema.Types.Mixed, default: {} }
   },
   maxPlayers: { type: Number, default: 20 },
@@ -134,7 +135,7 @@ const dialogueSchema = new mongoose.Schema({
   conditionFailText: { type: String, default: '' }
 }, { _id: false });
 
-// ==================== AVATAR SCHEMA (UPDATED) ====================
+// ==================== AVATAR SCHEMA ====================
 
 const studioAvatarSchema = new mongoose.Schema({
   id: String,
@@ -155,6 +156,41 @@ const studioAvatarSchema = new mongoose.Schema({
   properties: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: false });
 
+// ==================== VEHICLE SCHEMA ====================
+
+const studioVehicleSchema = new mongoose.Schema({
+  id: String,
+  type: { type: String, default: 'car', enum: ['car', 'truck', 'sports', 'buggy', 'bus', 'monster'] },
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
+  w: { type: Number, default: 120 },
+  h: { type: Number, default: 50 },
+  direction: { type: Number, default: 1 },
+  bodyColor: { type: String, default: '#3b82f6' },
+  accentColor: { type: String, default: '#1e3a5f' },
+  wheelColor: { type: String, default: '#222222' },
+  windowColor: { type: String, default: '#87ceeb' },
+  windowOpacity: { type: Number, default: 0.6 },
+  maxSpeed: { type: Number, default: 10 },
+  acceleration: { type: Number, default: 0.5 },
+  brakeForce: { type: Number, default: 0.8 },
+  friction: { type: Number, default: 0.05 },
+  jumpForce: { type: Number, default: 0 },
+  mass: { type: Number, default: 2 },
+  drivable: { type: Boolean, default: true },
+  enterKey: { type: String, default: 'E' },
+  enterRadius: { type: Number, default: 60 },
+  headlights: { type: Boolean, default: false },
+  lightRange: { type: Number, default: 200 },
+  lightColor: { type: String, default: '#ffffaa' },
+  horn: { type: Boolean, default: false },
+  respawnable: { type: Boolean, default: true },
+  seats: { type: Number, default: 1, min: 1, max: 8 },
+  properties: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
+// ==================== STUDIO GAME SCHEMA ====================
+
 const studioGameSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   ownerUsername: { type: String, required: true },
@@ -167,6 +203,7 @@ const studioGameSchema = new mongoose.Schema({
   items: [studioItemSchema],
   models: [studioModelSchema],
   avatars: [studioAvatarSchema],
+  vehicles: [studioVehicleSchema],
   settings: { type: mongoose.Schema.Types.Mixed, default: {
     gravity: 0.6, playerSpeed: 4, jumpForce: -12, spawnX: 100, spawnY: 400,
     bgColor: '#0a0a0a', worldWidth: 2400, worldHeight: 600
@@ -265,7 +302,14 @@ const ASSET_STORE = [
   { id: 'heart', name: 'Heart', category: 'collectible', icon: 'heart', description: 'Restores health', defaults: { healAmount: 25 } },
   { id: 'key', name: 'Key', category: 'tool', icon: 'key', description: 'Opens doors', defaults: {} },
   { id: 'battery', name: 'Battery', category: 'tool', icon: 'battery', description: 'Recharges flashlight', defaults: { recharge: 25 } },
-  { id: 'note', name: 'Note', category: 'collectible', icon: 'note', description: 'Readable note', defaults: { text: 'An old note...' } }
+  { id: 'note', name: 'Note', category: 'collectible', icon: 'note', description: 'Readable note', defaults: { text: 'An old note...' } },
+  // VEHICLES
+  { id: 'vehicle_car', name: 'Car', category: 'vehicle', icon: 'car', description: 'Standard car, balanced stats', defaults: { type: 'car', maxSpeed: 10, acceleration: 0.5, brakeForce: 0.8, mass: 2, w: 120, h: 50 } },
+  { id: 'vehicle_truck', name: 'Truck', category: 'vehicle', icon: 'truck', description: 'Heavy truck, slow but powerful', defaults: { type: 'truck', maxSpeed: 7, acceleration: 0.3, brakeForce: 0.6, mass: 5, w: 150, h: 60 } },
+  { id: 'vehicle_sports', name: 'Sports Car', category: 'vehicle', icon: 'sports', description: 'Fast and agile', defaults: { type: 'sports', maxSpeed: 18, acceleration: 1.0, brakeForce: 1.2, mass: 1.5, w: 130, h: 42 } },
+  { id: 'vehicle_buggy', name: 'Buggy', category: 'vehicle', icon: 'buggy', description: 'Off-road, can jump', defaults: { type: 'buggy', maxSpeed: 12, acceleration: 0.7, brakeForce: 0.5, mass: 1, jumpForce: 8, w: 110, h: 55 } },
+  { id: 'vehicle_bus', name: 'Bus', category: 'vehicle', icon: 'bus', description: 'Multi-seat transport', defaults: { type: 'bus', maxSpeed: 8, acceleration: 0.3, brakeForce: 0.5, mass: 6, seats: 4, w: 180, h: 65 } },
+  { id: 'vehicle_monster', name: 'Monster Truck', category: 'vehicle', icon: 'monster', description: 'Huge wheels, can jump', defaults: { type: 'monster', maxSpeed: 9, acceleration: 0.4, brakeForce: 0.7, mass: 4, jumpForce: 10, w: 140, h: 70 } }
 ];
 
 // ==================== MIDDLEWARE ====================
@@ -693,23 +737,12 @@ app.get('/api/studio/my-games', authMw, dbReady, async (req, res) => {
     const owned = await StudioGame.find({ owner: req.userId })
       .select('title description thumbnailData status plays published publishedAt createdAt updatedAt')
       .sort({ updatedAt: -1 });
-
-    const editing = await StudioGame.find({
-      editors: req.userId,
-      owner: { $ne: req.userId }
-    })
+    const editing = await StudioGame.find({ editors: req.userId, owner: { $ne: req.userId } })
       .select('title description thumbnailData status plays published publishedAt createdAt updatedAt owner')
       .sort({ updatedAt: -1 });
-
-    const editingMapped = editing.map(g => {
-      const obj = g.toObject();
-      obj.isEditor = true;
-      return obj;
-    });
-
+    const editingMapped = editing.map(g => { const obj = g.toObject(); obj.isEditor = true; return obj; });
     res.json([...owned, ...editingMapped]);
-  }
-  catch { res.status(500).json({ error: 'Server error' }); }
+  } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/studio/create', authMw, dbReady, async (req, res) => {
@@ -720,7 +753,7 @@ app.post('/api/studio/create', authMw, dbReady, async (req, res) => {
     const game = new StudioGame({
       owner: req.userId, ownerUsername: user.username, title: 'Untitled Game',
       blocks: [{ id: 'block_' + Date.now(), x: 0, y: 500, w: 2400, h: 40, color: '#333333', opacity: 1 }],
-      items: [], models: [], avatars: [], editors: [],
+      items: [], models: [], avatars: [], vehicles: [], editors: [],
       settings: { gravity: 0.6, playerSpeed: 4, jumpForce: -12, spawnX: 100, spawnY: 400, bgColor: '#0a0a0a', worldWidth: 2400, worldHeight: 600 }
     });
     await game.save();
@@ -732,11 +765,9 @@ app.get('/api/studio/game/:id', authMw, dbReady, async (req, res) => {
   try {
     const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
-
     const isOwner = game.owner.toString() === req.userId.toString();
     const isEditor = game.editors && game.editors.some(e => e.toString() === req.userId.toString());
     if (!isOwner && !isEditor) return res.status(403).json({ error: 'Not authorized' });
-
     const obj = game.toObject();
     obj.isEditor = !isOwner && isEditor;
     res.json(obj);
@@ -747,22 +778,22 @@ app.post('/api/studio/save/:id', authMw, dbReady, async (req, res) => {
   try {
     const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
-
     const isOwner = game.owner.toString() === req.userId.toString();
     const isEditor = game.editors && game.editors.some(e => e.toString() === req.userId.toString());
     if (!isOwner && !isEditor) return res.status(403).json({ error: 'Not authorized' });
 
-    const { title, description, blocks, items, models, avatars, settings, thumbnailData } = req.body;
+    const { title, description, blocks, items, models, avatars, vehicles, settings, thumbnailData } = req.body;
     if (title !== undefined) game.title = String(title).substring(0, 50);
     if (description !== undefined) game.description = String(description).substring(0, 200);
     if (Array.isArray(blocks)) game.blocks = blocks;
     if (Array.isArray(items)) game.items = items;
     if (Array.isArray(models)) game.models = models;
     if (Array.isArray(avatars)) game.avatars = avatars;
+    if (Array.isArray(vehicles)) game.vehicles = vehicles;
     if (settings && typeof settings === 'object') game.settings = settings;
     if (thumbnailData) game.thumbnailData = thumbnailData.substring(0, 200000);
     game.updatedAt = new Date();
-    for (const f of ['blocks', 'items', 'models', 'avatars', 'settings']) game.markModified(f);
+    for (const f of ['blocks', 'items', 'models', 'avatars', 'vehicles', 'settings']) game.markModified(f);
     await game.save();
     if (game.published && game.status === 'public') await syncStudioToLiveGame(game);
     res.json({ success: true });
@@ -773,8 +804,6 @@ app.post('/api/studio/publish/:id', authMw, dbReady, async (req, res) => {
   try {
     const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
-
-    // Только владелец может публиковать
     if (game.owner.toString() !== req.userId.toString()) return res.status(403).json({ error: 'Only owner can publish' });
 
     const { status, title, description, thumbnailData } = req.body;
@@ -787,6 +816,7 @@ app.post('/api/studio/publish/:id', authMw, dbReady, async (req, res) => {
     game.updatedAt = new Date();
     game.markModified('settings');
     game.markModified('avatars');
+    game.markModified('vehicles');
     await game.save();
     if (status === 'public') {
       await syncStudioToLiveGame(game);
@@ -801,6 +831,7 @@ async function syncStudioToLiveGame(game) {
   const gi = Array.isArray(game.items) ? game.items : [];
   const gm = Array.isArray(game.models) ? game.models : [];
   const ga = Array.isArray(game.avatars) ? game.avatars : [];
+  const gv = Array.isArray(game.vehicles) ? game.vehicles : [];
   const gs = game.settings || {};
   const spawnItems = gi.filter(i => i?.giveOnStart);
   const collectibleItems = gi.filter(i => i && !i.giveOnStart && i.collectOnTouch !== false);
@@ -863,6 +894,23 @@ async function syncStudioToLiveGame(game) {
     return avatarData;
   });
 
+  const vehicles = gv.map(v => ({
+    id: v.id, type: v.type || 'car', x: v.x, y: v.y, w: v.w || 120, h: v.h || 50,
+    direction: v.direction || 1,
+    bodyColor: v.bodyColor || '#3b82f6', accentColor: v.accentColor || '#1e3a5f',
+    wheelColor: v.wheelColor || '#222222', windowColor: v.windowColor || '#87ceeb',
+    windowOpacity: v.windowOpacity || 0.6,
+    maxSpeed: v.maxSpeed || 10, acceleration: v.acceleration || 0.5,
+    brakeForce: v.brakeForce || 0.8, friction: v.friction || 0.05,
+    jumpForce: v.jumpForce || 0, mass: v.mass || 2,
+    drivable: v.drivable !== false, enterKey: v.enterKey || 'E',
+    enterRadius: v.enterRadius || 60,
+    headlights: v.headlights || false, lightRange: v.lightRange || 200,
+    lightColor: v.lightColor || '#ffffaa',
+    horn: v.horn || false, respawnable: v.respawnable !== false,
+    seats: v.seats || 1, properties: v.properties || {}
+  }));
+
   const gameConfig = {
     gravity: gs.gravity || 0.6, maxFallSpeed: 12, playerSpeed: gs.playerSpeed || 4, jumpForce: gs.jumpForce || -12,
     spawnX: gs.spawnX || 100, spawnY: gs.spawnY || 400,
@@ -871,6 +919,7 @@ async function syncStudioToLiveGame(game) {
     collectibleItems: collectibleItems.map(i => ({ type: i.type, x: i.x, y: i.y, properties: i.properties || {}, collectOnTouch: i.collectOnTouch !== false })),
     models: gm.map(m => ({ id: m.id, type: m.type, x: m.x, y: m.y, w: m.w || 40, h: m.h || 80, properties: m.properties || {} })),
     avatars,
+    vehicles,
     settings: gs
   };
   gi.forEach(i => { if (i && !gameConfig.items[i.type]) { const asset = ASSET_STORE.find(a => a.id === i.type); gameConfig.items[i.type] = { name: asset?.name || i.type, ...(i.properties || {}) }; } });
@@ -890,15 +939,13 @@ app.delete('/api/studio/game/:id', authMw, dbReady, async (req, res) => {
   try {
     const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
-
-    // Только владелец может удалять
     if (game.owner.toString() !== req.userId.toString()) return res.status(403).json({ error: 'Only owner can delete' });
-
     await Promise.all([Game.deleteOne({ slug: `studio_${game._id}` }), StudioGame.deleteOne({ _id: game._id })]);
     clearPlaceCache(`studio_${game._id}`);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
+
 // ==================== MARKET API ====================
 
 app.get('/api/market/captcha-key', (_, res) => { res.json({ sitekey: HCAPTCHA_SITEKEY }); });
@@ -1075,8 +1122,8 @@ async function getPlaceConfig(slug) {
     playerSpeed: c.playerSpeed, jumpForce: c.jumpForce, spawnX: c.spawnX, spawnY: c.spawnY,
     platforms: c.platforms || [], checkpoints: c.checkpoints || [], items: c.items || {},
     maxPlayers: game.maxPlayers, spawnItems: c.spawnItems || [], collectibleItems: c.collectibleItems || [],
-    models: c.models || [], avatars: c.avatars || [], settings: c.settings || {},
-    blocks: c.platforms || []
+    models: c.models || [], avatars: c.avatars || [], vehicles: c.vehicles || [],
+    settings: c.settings || {}, blocks: c.platforms || []
   };
   PLACES_CACHE[slug] = pd;
   return pd;
@@ -1090,13 +1137,38 @@ const rooms = {}, playerRooms = {}, activeUserSessions = {};
 function getOrCreateRoom(placeName, maxPlayers = 20) {
   for (const [roomId, room] of Object.entries(rooms)) { if (room.place === placeName && Object.keys(room.players).length < maxPlayers) return roomId; }
   const roomId = `${placeName}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-  rooms[roomId] = { players: {}, place: placeName };
+  rooms[roomId] = { players: {}, place: placeName, vehicleStates: {} };
   return roomId;
 }
 
 function removePlayerFromAllRooms(socketId) {
   const roomId = playerRooms[socketId];
   if (roomId && rooms[roomId]) {
+    // Vehicle cleanup
+    const player = rooms[roomId].players[socketId];
+    if (player?.inVehicle && rooms[roomId].vehicleStates) {
+      const vs = rooms[roomId].vehicleStates[player.inVehicle];
+      if (vs) {
+        if (vs.driver === socketId) {
+          vs.driver = null;
+          if (vs.passengers.length > 0) {
+            vs.driver = vs.passengers.shift();
+            const newDriver = rooms[roomId].players[vs.driver];
+            if (newDriver) newDriver.isDriver = true;
+            io.to(vs.driver).emit('promoted-to-driver', { vehicleId: player.inVehicle });
+          }
+        } else {
+          vs.passengers = vs.passengers.filter(id => id !== socketId);
+        }
+        io.to(roomId).emit('vehicle-exited', {
+          vehicleId: player.inVehicle,
+          playerId: socketId,
+          driver: vs.driver,
+          passengers: vs.passengers
+        });
+      }
+    }
+
     delete rooms[roomId].players[socketId];
     io.to(roomId).emit('player-left', { id: socketId });
     if (Object.keys(rooms[roomId].players).length === 0) delete rooms[roomId];
@@ -1150,11 +1222,16 @@ io.on('connection', (socket) => {
         width: 32, height: 48, onGround: false, direction: 1, state: 'idle', frame: 0,
         checkpoint: { x: placeData.spawnX, y: placeData.spawnY }, currentCheckpointIndex: -1,
         avatar: user.avatar, hp: 100, maxHp: 100,
-        inventory, activeSlot: 0, attacking: false, lastAttackTime: 0, equipped
+        inventory, activeSlot: 0, attacking: false, lastAttackTime: 0, equipped,
+        inVehicle: null, isDriver: false
       };
 
       rooms[roomId].players[socket.id] = playerData;
-      socket.emit('game-init', { place: placeData, placeName: place, player: playerData, players: rooms[roomId].players, roomId });
+      socket.emit('game-init', {
+        place: placeData, placeName: place, player: playerData,
+        players: rooms[roomId].players, roomId,
+        vehicleStates: rooms[roomId].vehicleStates || {}
+      });
       socket.to(roomId).emit('player-joined', playerData);
     } catch (e) { console.error('[join-game]', e); socket.emit('error-msg', 'Failed to join'); }
   });
@@ -1168,7 +1245,7 @@ io.on('connection', (socket) => {
     p.direction = data.direction; p.state = data.state; p.frame = data.frame;
     p.onGround = data.onGround; p.activeSlot = data.activeSlot || 0; p.attacking = data.attacking || false;
     if (p.y > 700) { p.x = p.checkpoint.x; p.y = p.checkpoint.y; p.vx = 0; p.vy = 0; p.hp = p.maxHp; socket.emit('player-respawn', { x: p.x, y: p.y, hp: p.hp }); }
-    socket.to(roomId).emit('player-moved', { id: socket.id, x: p.x, y: p.y, vx: p.vx, vy: p.vy, direction: p.direction, state: p.state, frame: p.frame, activeSlot: p.activeSlot, attacking: p.attacking, hp: p.hp, itemState: data.itemState || {} });
+    socket.to(roomId).emit('player-moved', { id: socket.id, x: p.x, y: p.y, vx: p.vx, vy: p.vy, direction: p.direction, state: p.state, frame: p.frame, activeSlot: p.activeSlot, attacking: p.attacking, hp: p.hp, itemState: data.itemState || {}, inVehicle: p.inVehicle });
   });
 
   socket.on('attack', async () => {
@@ -1223,6 +1300,144 @@ io.on('connection', (socket) => {
     const roomId = playerRooms[socket.id]; if (!roomId || !rooms[roomId]) return;
     const p = rooms[roomId].players[socket.id];
     if (p && typeof data.slot === 'number' && data.slot >= 0 && data.slot < 4) p.activeSlot = data.slot;
+  });
+
+  // ==================== VEHICLE EVENTS ====================
+
+  socket.on('enter-vehicle', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !data.vehicleId || p.inVehicle) return;
+
+    if (!rooms[roomId].vehicleStates) rooms[roomId].vehicleStates = {};
+    const vs = rooms[roomId].vehicleStates[data.vehicleId] || {
+      driver: null, passengers: [], vx: 0,
+      x: data.x || 0, y: data.y || 0, direction: data.direction || 1
+    };
+
+    const maxSeats = data.maxSeats || 1;
+
+    if (vs.driver && vs.driver !== socket.id) {
+      if (vs.passengers.length >= maxSeats - 1) return;
+      vs.passengers.push(socket.id);
+    } else if (!vs.driver) {
+      vs.driver = socket.id;
+    } else {
+      return;
+    }
+
+    rooms[roomId].vehicleStates[data.vehicleId] = vs;
+    p.inVehicle = data.vehicleId;
+    p.isDriver = vs.driver === socket.id;
+
+    io.to(roomId).emit('vehicle-entered', {
+      vehicleId: data.vehicleId,
+      playerId: socket.id,
+      username: p.username,
+      isDriver: p.isDriver,
+      driver: vs.driver,
+      passengers: vs.passengers
+    });
+  });
+
+  socket.on('exit-vehicle', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !p.inVehicle) return;
+
+    const vehicleId = p.inVehicle;
+    const vs = rooms[roomId].vehicleStates?.[vehicleId];
+    if (vs) {
+      if (vs.driver === socket.id) {
+        vs.driver = null;
+        if (vs.passengers.length > 0) {
+          vs.driver = vs.passengers.shift();
+          const newDriver = rooms[roomId].players[vs.driver];
+          if (newDriver) { newDriver.isDriver = true; }
+          io.to(vs.driver).emit('promoted-to-driver', { vehicleId });
+        }
+      } else {
+        vs.passengers = vs.passengers.filter(id => id !== socket.id);
+      }
+    }
+
+    const exitX = vs ? vs.x + 60 : p.x;
+    const exitY = vs ? vs.y - 20 : p.y;
+    p.inVehicle = null;
+    p.isDriver = false;
+    p.x = exitX;
+    p.y = exitY;
+
+    socket.emit('vehicle-exit-position', { x: exitX, y: exitY });
+
+    io.to(roomId).emit('vehicle-exited', {
+      vehicleId,
+      playerId: socket.id,
+      username: p.username,
+      driver: vs?.driver || null,
+      passengers: vs?.passengers || []
+    });
+  });
+
+  socket.on('vehicle-update', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !p.inVehicle || !p.isDriver) return;
+
+    const vs = rooms[roomId].vehicleStates?.[p.inVehicle];
+    if (!vs || vs.driver !== socket.id) return;
+
+    vs.x = data.x;
+    vs.y = data.y;
+    vs.vx = data.vx || 0;
+    vs.direction = data.direction || 1;
+
+    // Update driver position to match vehicle
+    p.x = data.x;
+    p.y = data.y;
+
+    // Update passengers positions
+    for (const passId of vs.passengers) {
+      const pass = rooms[roomId].players[passId];
+      if (pass) { pass.x = data.x; pass.y = data.y; }
+    }
+
+    socket.to(roomId).emit('vehicle-moved', {
+      vehicleId: p.inVehicle,
+      x: data.x,
+      y: data.y,
+      vx: data.vx || 0,
+      vy: data.vy || 0,
+      direction: data.direction || 1,
+      wheelRotation: data.wheelRotation || 0
+    });
+  });
+
+  socket.on('vehicle-horn', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !p.inVehicle) return;
+    socket.to(roomId).emit('vehicle-horn', { vehicleId: data.vehicleId, playerId: socket.id });
+  });
+
+  socket.on('vehicle-headlights', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !p.inVehicle || !p.isDriver) return;
+    socket.to(roomId).emit('vehicle-headlights', { vehicleId: data.vehicleId, on: data.on });
+  });
+
+  socket.on('vehicle-jump', (data) => {
+    const roomId = playerRooms[socket.id];
+    if (!roomId || !rooms[roomId]) return;
+    const p = rooms[roomId].players[socket.id];
+    if (!p || !p.inVehicle || !p.isDriver) return;
+    socket.to(roomId).emit('vehicle-jump', { vehicleId: data.vehicleId });
   });
 
   socket.on('disconnect', () => {

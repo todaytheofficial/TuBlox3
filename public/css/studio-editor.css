@@ -578,6 +578,167 @@ body{font-family:'Inter',sans-serif;background:#000;color:#fff;overflow:hidden;w
   }
 }
 
+/* ==================== VEHICLES ==================== */
+
+.vehicle-preview-box {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  background: #080808;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.vehicle-preview-box canvas {
+  border-radius: 4px;
+}
+
+/* Vehicle type cards in asset store */
+.asset-item[data-asset-cat="vehicle"] {
+  border-left: 3px solid #f472b6;
+}
+
+.asset-item[data-asset-cat="vehicle"]:hover {
+  border-left-color: #ec4899;
+}
+
+/* Vehicle indicator on canvas */
+.vehicle-enter-hint {
+  font-size: 10px;
+  fill: #f472b6;
+}
+
+/* Vehicle seat indicator */
+.vehicle-seat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  display: inline-block;
+  margin: 0 1px;
+}
+
+.vehicle-seat-dot.occupied {
+  background: #ef4444;
+}
+
+/* Vehicle stats in properties */
+.vehicle-stats-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #111;
+  font-size: 11px;
+}
+
+.vehicle-stats-row span:first-child {
+  color: #555;
+  font-weight: 600;
+}
+
+.vehicle-stats-row span:last-child {
+  color: #aaa;
+  font-weight: 700;
+}
+
+/* Vehicle type selector enhanced */
+.vehicle-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.vehicle-type-card {
+  padding: 10px 6px;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.vehicle-type-card:hover {
+  border-color: #f472b6;
+  background: #151515;
+}
+
+.vehicle-type-card.active {
+  border-color: #f472b6;
+  background: rgba(244, 114, 182, 0.1);
+  color: #fff;
+}
+
+.vehicle-type-card .vt-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.vehicle-type-card .vt-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+}
+
+.vehicle-type-card.active .vt-label {
+  color: #f472b6;
+}
+
+/* Speed meter style indicator */
+.vehicle-speed-meter {
+  position: relative;
+  height: 8px;
+  background: #111;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.vehicle-speed-meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.vehicle-speed-meter-fill.slow {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.vehicle-speed-meter-fill.medium {
+  background: linear-gradient(90deg, #eab308, #facc15);
+}
+
+.vehicle-speed-meter-fill.fast {
+  background: linear-gradient(90deg, #f97316, #ef4444);
+}
+
+/* Explorer vehicle items */
+.explorer-vehicle-icon {
+  color: #f472b6;
+}
+
+@media(max-width: 768px) {
+  .vehicle-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vehicle-preview-box canvas {
+    width: 100%;
+    height: auto;
+  }
+
+  #vehicle-props .rp-slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:#0a0a0a}
