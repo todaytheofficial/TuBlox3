@@ -160,6 +160,7 @@ const studioGameSchema = new mongoose.Schema({
   ownerUsername: { type: String, required: true },
   title: { type: String, required: true, maxlength: 50 },
   description: { type: String, default: '', maxlength: 200 },
+  editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }],
   thumbnailData: { type: String, default: '' },
   status: { type: String, enum: ['private', 'public'], default: 'private' },
   blocks: [studioBlockSchema],
@@ -688,7 +689,26 @@ app.get('/api/assets', (_, res) => { res.json(ASSET_STORE); });
 // ==================== STUDIO API ====================
 
 app.get('/api/studio/my-games', authMw, dbReady, async (req, res) => {
-  try { res.json(await StudioGame.find({ owner: req.userId }).select('title description thumbnailData status plays published publishedAt createdAt updatedAt').sort({ updatedAt: -1 })); }
+  try {
+    const owned = await StudioGame.find({ owner: req.userId })
+      .select('title description thumbnailData status plays published publishedAt createdAt updatedAt')
+      .sort({ updatedAt: -1 });
+
+    const editing = await StudioGame.find({
+      editors: req.userId,
+      owner: { $ne: req.userId }
+    })
+      .select('title description thumbnailData status plays published publishedAt createdAt updatedAt owner')
+      .sort({ updatedAt: -1 });
+
+    const editingMapped = editing.map(g => {
+      const obj = g.toObject();
+      obj.isEditor = true;
+      return obj;
+    });
+
+    res.json([...owned, ...editingMapped]);
+  }
   catch { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -700,7 +720,7 @@ app.post('/api/studio/create', authMw, dbReady, async (req, res) => {
     const game = new StudioGame({
       owner: req.userId, ownerUsername: user.username, title: 'Untitled Game',
       blocks: [{ id: 'block_' + Date.now(), x: 0, y: 500, w: 2400, h: 40, color: '#333333', opacity: 1 }],
-      items: [], models: [], avatars: [],
+      items: [], models: [], avatars: [], editors: [],
       settings: { gravity: 0.6, playerSpeed: 4, jumpForce: -12, spawnX: 100, spawnY: 400, bgColor: '#0a0a0a', worldWidth: 2400, worldHeight: 600 }
     });
     await game.save();
@@ -710,16 +730,28 @@ app.post('/api/studio/create', authMw, dbReady, async (req, res) => {
 
 app.get('/api/studio/game/:id', authMw, dbReady, async (req, res) => {
   try {
-    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
-    res.json(game);
+
+    const isOwner = game.owner.toString() === req.userId.toString();
+    const isEditor = game.editors && game.editors.some(e => e.toString() === req.userId.toString());
+    if (!isOwner && !isEditor) return res.status(403).json({ error: 'Not authorized' });
+
+    const obj = game.toObject();
+    obj.isEditor = !isOwner && isEditor;
+    res.json(obj);
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/studio/save/:id', authMw, dbReady, async (req, res) => {
   try {
-    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
+
+    const isOwner = game.owner.toString() === req.userId.toString();
+    const isEditor = game.editors && game.editors.some(e => e.toString() === req.userId.toString());
+    if (!isOwner && !isEditor) return res.status(403).json({ error: 'Not authorized' });
+
     const { title, description, blocks, items, models, avatars, settings, thumbnailData } = req.body;
     if (title !== undefined) game.title = String(title).substring(0, 50);
     if (description !== undefined) game.description = String(description).substring(0, 200);
@@ -739,8 +771,12 @@ app.post('/api/studio/save/:id', authMw, dbReady, async (req, res) => {
 
 app.post('/api/studio/publish/:id', authMw, dbReady, async (req, res) => {
   try {
-    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
+
+    // Только владелец может публиковать
+    if (game.owner.toString() !== req.userId.toString()) return res.status(403).json({ error: 'Only owner can publish' });
+
     const { status, title, description, thumbnailData } = req.body;
     if (!['public', 'private'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
     if (title) game.title = title.substring(0, 50);
@@ -789,7 +825,6 @@ async function syncStudioToLiveGame(game) {
       properties: av.properties || {}
     };
 
-    // Include dialogue data if interactive
     if (av.interactive && av.dialogue) {
       avatarData.dialogue = {
         triggerKey: av.dialogue.triggerKey || 'E',
@@ -853,14 +888,17 @@ async function syncStudioToLiveGame(game) {
 
 app.delete('/api/studio/game/:id', authMw, dbReady, async (req, res) => {
   try {
-    const game = await StudioGame.findOne({ _id: req.params.id, owner: req.userId });
+    const game = await StudioGame.findById(req.params.id);
     if (!game) return res.status(404).json({ error: 'Game not found' });
+
+    // Только владелец может удалять
+    if (game.owner.toString() !== req.userId.toString()) return res.status(403).json({ error: 'Only owner can delete' });
+
     await Promise.all([Game.deleteOne({ slug: `studio_${game._id}` }), StudioGame.deleteOne({ _id: game._id })]);
     clearPlaceCache(`studio_${game._id}`);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
-
 // ==================== MARKET API ====================
 
 app.get('/api/market/captcha-key', (_, res) => { res.json({ sitekey: HCAPTCHA_SITEKEY }); });
@@ -1185,27 +1223,6 @@ io.on('connection', (socket) => {
     const roomId = playerRooms[socket.id]; if (!roomId || !rooms[roomId]) return;
     const p = rooms[roomId].players[socket.id];
     if (p && typeof data.slot === 'number' && data.slot >= 0 && data.slot < 4) p.activeSlot = data.slot;
-  });
-
-  socket.on('studio-join', async (data) => {
-    try {
-      if (!data.token || mongoose.connection.readyState !== 1) return;
-      const decoded = jwt.verify(data.token, JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('username');
-      if (!user) return;
-      socket._studioUser = user.username; socket.join('studio-room');
-      socket.emit('studio-sync', { offsetMs: timerOffsetMs, remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(), isAdmin: user.username === 'today_idk' });
-    } catch {}
-  });
-
-  socket.on('studio-adjust-time', (data) => {
-    if (!socket._studioUser || socket._studioUser !== 'today_idk') return;
-    const { action, amount } = data; if (!action) return;
-    const ms = parseInt(amount); if (isNaN(ms)) return;
-    const map = { 'add-hours': 3600000, 'sub-hours': -3600000, 'add-minutes': 60000, 'sub-minutes': -60000, 'add-seconds': 1000, 'sub-seconds': -1000 };
-    if (action === 'reset') timerOffsetMs = 0;
-    else if (map[action]) timerOffsetMs += map[action] * ms;
-    io.to('studio-room').emit('studio-timer-update', { offsetMs: timerOffsetMs, remainingMs: (STUDIO_TARGET + timerOffsetMs) - Date.now(), adjustedBy: socket._studioUser, action, amount: ms });
   });
 
   socket.on('disconnect', () => {
