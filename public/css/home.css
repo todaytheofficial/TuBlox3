@@ -106,18 +106,25 @@ a { text-decoration: none; color: inherit; }
   border-top: 1px solid #141414;
 }
 
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: #0e0e0e;
-  border: 1px solid #1a1a1a;
-  border-radius: 10px;
-  margin-bottom: 8px;
+/* Replace the .user-card canvas rule in home.css */
+
+.user-card canvas {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  image-rendering: auto; /* smooth scaling from 80x80 to 40x40 */
 }
 
-.user-card canvas { border-radius: 6px; flex-shrink: 0; }
+/* FIX: Sidebar avatar canvas styling */
+.user-card canvas {
+  border-radius: 8px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
 .user-info { display: flex; flex-direction: column; min-width: 0; }
 .user-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-status { font-size: 10px; color: #4ade80; font-weight: 600; }
@@ -477,6 +484,7 @@ a { text-decoration: none; color: inherit; }
   position: fixed;
   inset: 0;
   z-index: 200;
+  display: none;
 }
 
 .daily-reward-overlay {
@@ -484,6 +492,7 @@ a { text-decoration: none; color: inherit; }
   inset: 0;
   background: rgba(0,0,0,0.85);
   backdrop-filter: blur(12px);
+  cursor: pointer;
 }
 
 .daily-reward-panel {
@@ -549,6 +558,7 @@ a { text-decoration: none; color: inherit; }
   padding: 8px 12px;
   margin-bottom: 16px;
   text-align: center;
+  display: none;
 }
 
 .streak-reset span { color: #ef4444; font-size: 12px; font-weight: 600; }
@@ -582,7 +592,7 @@ a { text-decoration: none; color: inherit; }
   border-radius: 50%;
   background: #1a1a1a;
   border: 2px solid #2a2a2a;
-  transition: all 0.3s;
+  transition: all 0.4s ease;
 }
 
 .milestone-dot.active {
@@ -604,7 +614,7 @@ a { text-decoration: none; color: inherit; }
   height: 100%;
   background: linear-gradient(90deg, #fff, #888);
   border-radius: 2px;
-  transition: width 0.5s ease;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   width: 0%;
 }
 
@@ -628,7 +638,15 @@ a { text-decoration: none; color: inherit; }
 }
 
 .daily-earned-icon { width: 24px; height: 24px; object-fit: contain; }
-.daily-earned-amount span { font-size: 28px; font-weight: 900; }
+
+.daily-earned-amount span {
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff, #ccc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .daily-total {
   display: flex;
@@ -659,8 +677,14 @@ a { text-decoration: none; color: inherit; }
 
 /* Claim button */
 .btn { border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
-.btn-white { background: #fff; color: #000; font-weight: 800; border-radius: 10px; }
-.btn-white:hover { background: #e5e5e5; }
+.btn-white {
+  background: #fff;
+  color: #000;
+  font-weight: 800;
+  border-radius: 10px;
+}
+.btn-white:hover { background: #e5e5e5; transform: translateY(-1px); }
+.btn-white:active { transform: translateY(0); }
 .btn-full { width: 100%; padding: 12px; font-size: 14px; }
 
 /* ==================== RESPONSIVE ==================== */
@@ -682,6 +706,7 @@ a { text-decoration: none; color: inherit; }
   .section-header { flex-direction: column; align-items: stretch; }
   .search-bar { max-width: 100%; }
   .games-grid { grid-template-columns: 1fr; }
+  .daily-reward-panel { padding: 24px; width: 340px; }
 }
 
 ::-webkit-scrollbar { width: 4px; }

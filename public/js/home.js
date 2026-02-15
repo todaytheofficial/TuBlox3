@@ -21,11 +21,11 @@
       document.getElementById('welcome-urus').textContent = userData.urus;
       document.getElementById('welcome-strikes').textContent = userData.dailyStrikes;
 
-      startSidebarAvatar();
+      renderSidebarAvatar();
       startWelcomeAvatar();
 
       if (userData.dailyReward && userData.dailyReward.rewarded) {
-        showDailyReward(userData.dailyReward);
+        setTimeout(() => showDailyReward(userData.dailyReward), 150);
       }
 
       return userData;
@@ -35,52 +35,55 @@
     }
   }
 
-  // ==================== AVATARS ====================
+  // ==================== SIDEBAR AVATAR (Roblox-style bust) ====================
 
-  function startSidebarAvatar() {
+  function renderSidebarAvatar() {
     const canvas = document.getElementById('sidebar-avatar');
-    if (!canvas) return;
+    if (!canvas || !userData) return;
+
+    // Higher resolution for crisp rendering
+    canvas.width = 80;
+    canvas.height = 80;
+
+    TC.drawSidebar(canvas, userData.avatar, userData.equipped || {});
+  }
+
+  // ==================== WELCOME AVATAR ====================
+
+  function startWelcomeAvatar() {
+    const canvas = document.getElementById('welcome-avatar');
+    if (!canvas || !userData) return;
     const c = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
+    const W = canvas.width;
+    const H = canvas.height;
 
     function frame(ts) {
       const time = ts / 1000;
       c.clearRect(0, 0, W, H);
-      c.fillStyle = '#0e0e0e';
-      c.fillRect(0, 0, W, H);
-      TC.draw(c, W / 2 - 8, 2, 16, 28, 1, 'idle', Math.floor(time / 0.5) % 2,
-        userData.avatar, null, false, time, { equipped: userData.equipped || {} });
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-  }
-
-  function startWelcomeAvatar() {
-    const canvas = document.getElementById('welcome-avatar');
-    if (!canvas) return;
-    const c = canvas.getContext('2d');
-
-    function frame(ts) {
-      const time = ts / 1000;
-      c.clearRect(0, 0, 120, 160);
 
       c.fillStyle = '#080808';
-      c.fillRect(0, 0, 120, 160);
+      c.fillRect(0, 0, W, H);
 
-      // Subtle grid
       c.strokeStyle = '#0e0e0e';
       c.lineWidth = 0.5;
-      for (let x = 0; x < 120; x += 15) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 160); c.stroke(); }
-      for (let y = 0; y < 160; y += 15) { c.beginPath(); c.moveTo(0, y); c.lineTo(120, y); c.stroke(); }
+      for (let x = 0; x < W; x += 15) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+      for (let y = 0; y < H; y += 15) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
 
-      // Floor
       c.fillStyle = '#141414';
-      c.fillRect(0, 130, 120, 30);
+      c.fillRect(0, H - 30, W, 30);
       c.fillStyle = 'rgba(255,255,255,0.02)';
-      c.fillRect(0, 130, 120, 1);
+      c.fillRect(0, H - 30, W, 1);
 
-      TC.draw(c, 35, 45, 45, 80, 1, 'idle', Math.floor(time / 0.5) % 2,
-        userData.avatar, null, true, time, { equipped: userData.equipped || {} });
+      const charW = 45;
+      const charH = 80;
+      const charX = (W - charW) / 2;
+      const charY = H - 30 - charH - 2;
+
+      TC.draw(c, charX, charY, charW, charH, 1, 'idle',
+        Math.floor(time / 0.5) % 2,
+        userData.avatar, null, true, time,
+        { equipped: userData.equipped || {} }
+      );
 
       requestAnimationFrame(frame);
     }
@@ -130,7 +133,6 @@
     const gridEl = document.getElementById('games-grid');
     const noResults = document.getElementById('search-no-results');
 
-    // Cancel old thumbnail animations
     Object.keys(thumbAnimations).forEach(key => {
       if (thumbAnimations[key]) cancelAnimationFrame(thumbAnimations[key]);
     });
@@ -171,7 +173,6 @@
       gridEl.appendChild(card);
     });
 
-    // Start thumbnails after paint
     requestAnimationFrame(() => {
       filtered.forEach(game => {
         if (game.status === 'coming_soon') return;
@@ -224,10 +225,7 @@
           </div>
         </div>
       `;
-
-      card.addEventListener('click', () => {
-        window.location.href = `/games/${game.slug}`;
-      });
+      card.addEventListener('click', () => { window.location.href = `/games/${game.slug}`; });
     }
 
     return card;
@@ -252,32 +250,21 @@
     }
 
     function grid() {
-      c.strokeStyle = '#0f0f0f';
-      c.lineWidth = 0.5;
+      c.strokeStyle = '#0f0f0f'; c.lineWidth = 0.5;
       for (let x = 0; x < W; x += 24) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
       for (let y = 0; y < H; y += 24) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
     }
 
     function drawLabel() {
       c.save();
-      c.fillStyle = 'rgba(0,0,0,0.45)';
-      c.fillRect(0, 0, W, H);
-      c.font = '900 22px Inter';
-      c.fillStyle = '#fff';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(0, 0, W, H);
+      c.font = '900 22px Inter'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText(label, W / 2, H / 2 - 4);
-      if (sublabel) {
-        c.font = '600 10px Inter';
-        c.fillStyle = '#555';
-        c.fillText(sublabel, W / 2, H / 2 + 16);
-      }
+      if (sublabel) { c.font = '600 10px Inter'; c.fillStyle = '#555'; c.fillText(sublabel, W / 2, H / 2 + 16); }
       c.restore();
     }
 
-    function drawDefault() {
-      c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); grid(); drawLabel();
-    }
+    function drawDefault() { c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); grid(); drawLabel(); }
 
     if (style === 'platformer') {
       (function fp(ts) {
@@ -285,10 +272,8 @@
         c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); grid();
         c.fillStyle = '#1a1a1a'; c.fillRect(0, H - 40, W, 40);
         c.fillStyle = '#222'; c.fillRect(40, H - 90, 70, 8); c.fillRect(180, H - 115, 70, 8);
-        TC.draw(c, 50, H - 128, 22, 34, 1, 'run', Math.floor(at / 0.12) % 4,
-          { bodyColor: '#FFF', headColor: '#FFF', eyeColor: '#000' }, null, false, time, {});
-        TC.draw(c, 190, H - 153, 22, 34, -1, Math.sin(time * 2) > 0 ? 'jump' : 'idle', 0,
-          { bodyColor: '#CCC', headColor: '#DDD', eyeColor: '#000' }, null, false, time, {});
+        TC.draw(c, 50, H - 90 - 38, 22, 34, 1, 'run', Math.floor(at / 0.12) % 4, { bodyColor: '#FFF', headColor: '#FFF', eyeColor: '#000' }, null, false, time, {});
+        TC.draw(c, 190, H - 115 - 38, 22, 34, -1, Math.sin(time * 2) > 0 ? 'jump' : 'idle', 0, { bodyColor: '#CCC', headColor: '#DDD', eyeColor: '#000' }, null, false, time, {});
         drawLabel();
         thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
       })(0);
@@ -299,12 +284,8 @@
         c.fillStyle = '#1a1a1a'; c.fillRect(0, H - 45, W, 45);
         c.fillStyle = '#222'; c.fillRect(W / 2 - 50, H - 90, 100, 8);
         const atk = Math.sin(time * 4) > 0.7;
-        TC.draw(c, W / 2 - 25, H - 128, 22, 34, 1, 'idle', 0,
-          { bodyColor: '#FF4444', headColor: '#FF6666', eyeColor: '#000' }, null, false, time,
-          { activeItem: 'sword', attacking: atk, attackProgress: atk ? 0.4 : 0 });
-        TC.draw(c, W / 2 + 5, H - 128, 22, 34, -1, 'idle', 0,
-          { bodyColor: '#4488FF', headColor: '#66AAFF', eyeColor: '#000' }, null, false, time,
-          { activeItem: 'sword', attacking: !atk, attackProgress: !atk ? 0.4 : 0 });
+        TC.draw(c, W / 2 - 30, H - 90 - 38, 22, 34, 1, 'idle', 0, { bodyColor: '#FF4444', headColor: '#FF6666', eyeColor: '#000' }, null, false, time, { activeItem: 'sword', attacking: atk, attackProgress: atk ? 0.4 : 0 });
+        TC.draw(c, W / 2 + 8, H - 90 - 38, 22, 34, -1, 'idle', 0, { bodyColor: '#4488FF', headColor: '#66AAFF', eyeColor: '#000' }, null, false, time, { activeItem: 'sword', attacking: !atk, attackProgress: !atk ? 0.4 : 0 });
         drawLabel();
         thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
       })(0);
@@ -313,8 +294,7 @@
         const time = ts / 1000;
         c.fillStyle = '#080808'; c.fillRect(0, 0, W, H); grid();
         c.fillStyle = '#1a1a1a'; c.fillRect(0, H - 45, W, 45);
-        TC.draw(c, W / 2 - 11, H - 83, 22, 34, 1, 'idle', Math.floor(time / 0.5) % 2,
-          { bodyColor: '#AAA', headColor: '#BBB', eyeColor: '#000' }, null, false, time, {});
+        TC.draw(c, W / 2 - 11, H - 45 - 38, 22, 34, 1, 'idle', Math.floor(time / 0.5) % 2, { bodyColor: '#AAA', headColor: '#BBB', eyeColor: '#000' }, null, false, time, {});
         drawLabel();
         thumbAnimations[`thumb-${game.slug}`] = requestAnimationFrame(fp);
       })(0);
@@ -345,54 +325,64 @@
 
   function showDailyReward(reward) {
     const el = document.getElementById('daily-reward');
-    el.style.display = 'block';
+    if (!el) return;
 
-    document.getElementById('daily-strike-num').textContent = reward.dailyStrikes;
-    document.getElementById('daily-earned-num').textContent = `+${reward.rewardAmount}`;
-    document.getElementById('daily-total-amount').textContent = reward.totalUrus;
+    const strikeNum = document.getElementById('daily-strike-num');
+    const earnedNum = document.getElementById('daily-earned-num');
+    const totalAmount = document.getElementById('daily-total-amount');
+    const resetMsg = document.getElementById('streak-reset-msg');
+    const barFill = document.getElementById('strike-bar-fill');
+    const nextEl = document.getElementById('daily-next');
+    const claimBtn = document.getElementById('btn-claim');
 
-    if (reward.streakReset) {
-      document.getElementById('streak-reset-msg').style.display = 'block';
+    if (strikeNum) strikeNum.textContent = reward.dailyStrikes;
+    if (earnedNum) earnedNum.textContent = `+${reward.rewardAmount}`;
+    if (totalAmount) totalAmount.textContent = reward.totalUrus;
+    if (resetMsg) resetMsg.style.display = reward.streakReset ? 'block' : 'none';
+
+    if (barFill) {
+      const pct = Math.min(100, (reward.dailyStrikes / 15) * 100);
+      barFill.style.width = '0%';
+      setTimeout(() => { barFill.style.width = pct + '%'; }, 200);
     }
-
-    const pct = Math.min(100, (reward.dailyStrikes / 15) * 100);
-    document.getElementById('strike-bar-fill').style.width = pct + '%';
 
     [1, 5, 10, 15].forEach(day => {
       const dot = document.getElementById(`ms-${day}`);
-      if (dot && reward.dailyStrikes >= day) dot.classList.add('active');
+      if (dot) {
+        dot.classList.remove('active');
+        if (reward.dailyStrikes >= day) setTimeout(() => dot.classList.add('active'), 300 + day * 50);
+      }
     });
 
-    const next = reward.nextMilestone;
-    const nextEl = document.getElementById('daily-next');
-    if (next.day) {
-      const daysLeft = next.day - reward.dailyStrikes;
-      nextEl.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-        <span>${daysLeft} day${daysLeft !== 1 ? 's' : ''} until +${next.reward} Urus/day</span>
-      `;
-    } else {
-      nextEl.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-        <span>Max reward! +6 Urus/day</span>
-      `;
+    if (nextEl) {
+      const next = reward.nextMilestone;
+      if (next && next.day) {
+        const daysLeft = next.day - reward.dailyStrikes;
+        nextEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>${daysLeft} day${daysLeft !== 1 ? 's' : ''} until +${next.reward} Urus/day</span>`;
+      } else {
+        nextEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>Max reward! +6 Urus/day</span>`;
+      }
     }
 
-    document.getElementById('btn-claim').addEventListener('click', () => { el.style.display = 'none'; });
-    el.querySelector('.daily-reward-overlay')?.addEventListener('click', () => { el.style.display = 'none'; });
+    el.style.display = 'block';
+
+    if (claimBtn) {
+      const newBtn = claimBtn.cloneNode(true);
+      claimBtn.parentNode.replaceChild(newBtn, claimBtn);
+      newBtn.addEventListener('click', () => { el.style.display = 'none'; });
+    }
+
+    const overlay = el.querySelector('.daily-reward-overlay');
+    if (overlay) {
+      const newO = overlay.cloneNode(true);
+      overlay.parentNode.replaceChild(newO, overlay);
+      newO.addEventListener('click', () => { el.style.display = 'none'; });
+    }
   }
 
   // ==================== UTILS ====================
 
-  function escapeHtml(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
-  }
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
   // ==================== LOGOUT ====================
 
