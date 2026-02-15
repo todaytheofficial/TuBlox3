@@ -33,7 +33,7 @@
       document.getElementById('sidebar-urus').textContent = userData.urus;
       document.getElementById('sidebar-strikes').textContent = userData.dailyStrikes;
 
-      startSidebarAvatar()ж
+      startSidebarAvatar()
       return userData;
     } catch (e) {
       window.location.href = '/auth';
@@ -350,22 +350,12 @@
   function formatDate(dateStr) {
     if (!dateStr) return '—';
     const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   }
-
-  // ==================== EVENT LISTENERS ====================
-
-  // ==================== EVENT LISTENERS ====================
 
   document.getElementById('btn-logout').addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
