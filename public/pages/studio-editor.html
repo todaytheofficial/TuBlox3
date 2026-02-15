@@ -6,7 +6,7 @@
   <title>Tublox Studio Editor</title>
   <link rel="stylesheet" href="/css/studio-editor.css">
   <link rel="stylesheet" href="/css/shared.css">
-  <link rel="icon" type="image/png" href="/img/logo.png">
+  <link rel="icon" type="image/png" href="/img/studio.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -79,7 +79,7 @@
       </button>
     </div>
 
-    <!-- EXPLORER PANEL (like Roblox Studio) -->
+    <!-- EXPLORER PANEL -->
     <div id="explorer-panel" class="explorer-panel" style="display:none">
       <div class="rp-header">
         <h3>
@@ -90,10 +90,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-
-      <!-- Explorer tree -->
       <div class="explorer-tree" id="explorer-tree">
-        <!-- Workspace root -->
         <div class="explorer-node explorer-root" id="explorer-root">
           <div class="explorer-node-header" data-expand="workspace">
             <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
@@ -101,24 +98,18 @@
             <span>Workspace</span>
           </div>
           <div class="explorer-children" id="explorer-workspace-children">
-
-            <!-- Settings node -->
             <div class="explorer-node">
               <div class="explorer-node-header explorer-leaf" id="explorer-settings-node">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" style="margin-left:12px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4"/></svg>
                 <span>Settings</span>
               </div>
             </div>
-
-            <!-- Spawn node -->
             <div class="explorer-node">
               <div class="explorer-node-header explorer-leaf" id="explorer-spawn-node">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" style="margin-left:12px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 <span>SpawnPoint</span>
               </div>
             </div>
-
-            <!-- Blocks folder -->
             <div class="explorer-node">
               <div class="explorer-node-header" data-expand="blocks">
                 <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
@@ -128,8 +119,6 @@
               </div>
               <div class="explorer-children" id="explorer-blocks-list" style="display:none"></div>
             </div>
-
-            <!-- Items folder -->
             <div class="explorer-node">
               <div class="explorer-node-header" data-expand="items">
                 <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
@@ -139,8 +128,6 @@
               </div>
               <div class="explorer-children" id="explorer-items-list" style="display:none"></div>
             </div>
-
-            <!-- Models folder -->
             <div class="explorer-node">
               <div class="explorer-node-header" data-expand="models">
                 <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
@@ -150,7 +137,15 @@
               </div>
               <div class="explorer-children" id="explorer-models-list" style="display:none"></div>
             </div>
-
+            <div class="explorer-node">
+              <div class="explorer-node-header" data-expand="avatars">
+                <svg class="explorer-arrow" width="10" height="10" viewBox="0 0 10 10"><polygon points="3,2 8,5 3,8" fill="currentColor"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" style="margin-right:4px"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0114 0"/></svg>
+                <span>Avatars</span>
+                <span class="explorer-count" id="explorer-avatars-count">0</span>
+              </div>
+              <div class="explorer-children" id="explorer-avatars-list" style="display:none"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -267,6 +262,265 @@
         <div id="model-custom-props" class="rp-section"></div>
         <button class="btn btn-danger btn-full rp-delete" id="btn-delete-model">Delete Model</button>
       </div>
+
+      <!-- Avatar properties -->
+      <div id="avatar-props" style="display:none">
+        <div class="rp-section">
+          <label>Avatar Placement</label>
+          <div class="avatar-preview-box">
+            <canvas id="avatar-preview-canvas" width="80" height="100"></canvas>
+          </div>
+        </div>
+        <div class="rp-section">
+          <label>Position</label>
+          <div class="rp-row">
+            <div class="rp-field"><span>X</span><input type="number" id="avatar-x"></div>
+            <div class="rp-field"><span>Y</span><input type="number" id="avatar-y"></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <label>Scale</label>
+          <div class="rp-row">
+            <div class="rp-field"><span>W</span><input type="number" id="avatar-w" min="10" value="22"></div>
+            <div class="rp-field"><span>H</span><input type="number" id="avatar-h" min="10" value="34"></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <label>Direction</label>
+          <div class="rp-row">
+            <button class="avatar-dir-btn active" data-dir="1" id="avatar-dir-right">→ Right</button>
+            <button class="avatar-dir-btn" data-dir="-1" id="avatar-dir-left">← Left</button>
+          </div>
+        </div>
+        <div class="settings-divider"></div>
+        <h4 class="settings-section-title">Animation</h4>
+        <div class="rp-section">
+          <label>Default Animation</label>
+          <select id="avatar-default-anim" class="rp-select">
+            <option value="idle">Idle</option>
+            <option value="run">Run</option>
+            <option value="jump">Jump</option>
+            <option value="dance">Dance</option>
+            <option value="wave">Wave</option>
+            <option value="sit">Sit</option>
+            <option value="custom">Custom Keyframes</option>
+          </select>
+        </div>
+        <div class="rp-section">
+          <label>Animation Speed</label>
+          <input type="range" id="avatar-anim-speed" min="0.1" max="3" step="0.1" value="1" class="rp-slider">
+          <span class="rp-slider-val" id="avatar-anim-speed-val">1.0</span>
+        </div>
+        <div class="rp-section">
+          <div class="rp-checkbox">
+            <input type="checkbox" id="avatar-loop" checked>
+            <label for="avatar-loop">Loop Animation</label>
+          </div>
+        </div>
+<div class="rp-section">
+  <div class="rp-checkbox">
+    <input type="checkbox" id="avatar-interact">
+    <label for="avatar-interact">Interactive (player can trigger)</label>
+  </div>
+</div>
+
+<!-- DIALOGUE SCRIPT SECTION -->
+<div id="avatar-dialogue-section" style="display:none">
+  <div class="settings-divider"></div>
+  <h4 class="settings-section-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+    Dialogue Script
+  </h4>
+  <div class="rp-section">
+    <label>Trigger Key</label>
+    <select id="dialogue-trigger-key" class="rp-select">
+      <option value="E">E (default)</option>
+      <option value="F">F</option>
+      <option value="Space">Space</option>
+    </select>
+  </div>
+  <div class="rp-section">
+    <label>Trigger Radius</label>
+    <input type="range" id="dialogue-trigger-radius" min="30" max="300" step="10" value="80" class="rp-slider">
+    <span class="rp-slider-val" id="dialogue-trigger-radius-val">80</span>
+  </div>
+  <div class="rp-section">
+    <div class="rp-checkbox">
+      <input type="checkbox" id="dialogue-one-time">
+      <label for="dialogue-one-time">One-time dialogue (can't repeat)</label>
+    </div>
+  </div>
+  <div class="rp-section">
+    <label>NPC Name</label>
+    <input type="text" id="dialogue-npc-name" class="rp-input" placeholder="e.g. Guard, Merchant..." maxlength="30">
+  </div>
+  <div class="rp-section">
+    <label>Name Color</label>
+    <input type="color" id="dialogue-name-color" value="#a78bfa" class="rp-color-sm">
+  </div>
+  <div class="rp-section">
+    <label>Dialogue Lines</label>
+    <div id="dialogue-lines-list" class="dialogue-lines-list"></div>
+    <button class="btn btn-sm btn-outline-light" id="btn-add-dialogue-line" style="margin-top:6px;width:100%">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Line
+    </button>
+  </div>
+
+  <div class="settings-divider"></div>
+  <h4 class="settings-section-title">Choices (Branching)</h4>
+  <div class="rp-section">
+    <div class="rp-checkbox">
+      <input type="checkbox" id="dialogue-has-choices">
+      <label for="dialogue-has-choices">Enable player choices</label>
+    </div>
+  </div>
+  <div id="dialogue-choices-section" style="display:none">
+    <div class="rp-section">
+      <label>Show choices after line #</label>
+      <input type="number" id="dialogue-choice-after" class="rp-input-sm" min="1" value="1" style="width:60px">
+    </div>
+    <div class="rp-section">
+      <label>Choice Prompt</label>
+      <input type="text" id="dialogue-choice-prompt" class="rp-input" placeholder="What do you want to do?" maxlength="100">
+    </div>
+    <div id="dialogue-choices-list" class="dialogue-choices-list"></div>
+    <button class="btn btn-sm btn-outline-light" id="btn-add-dialogue-choice" style="margin-top:6px;width:100%">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Choice
+    </button>
+  </div>
+
+  <div class="settings-divider"></div>
+  <h4 class="settings-section-title">Actions</h4>
+  <div class="rp-section">
+    <label>On Dialogue End</label>
+    <select id="dialogue-end-action" class="rp-select">
+      <option value="none">None</option>
+      <option value="give_item">Give Item</option>
+      <option value="remove_item">Remove Item</option>
+      <option value="teleport">Teleport Player</option>
+      <option value="open_door">Open Door/Model</option>
+      <option value="set_variable">Set Variable</option>
+      <option value="play_anim">Play Avatar Animation</option>
+    </select>
+  </div>
+  <div id="dialogue-action-params" class="rp-section"></div>
+
+  <div class="settings-divider"></div>
+  <h4 class="settings-section-title">Conditions</h4>
+  <div class="rp-section">
+    <div class="rp-checkbox">
+      <input type="checkbox" id="dialogue-has-condition">
+      <label for="dialogue-has-condition">Require condition to start</label>
+    </div>
+  </div>
+  <div id="dialogue-condition-section" style="display:none">
+    <div class="rp-section">
+      <label>Condition Type</label>
+      <select id="dialogue-condition-type" class="rp-select">
+        <option value="has_item">Player has item</option>
+        <option value="no_item">Player doesn't have item</option>
+        <option value="variable_equals">Variable equals</option>
+        <option value="variable_gt">Variable greater than</option>
+      </select>
+    </div>
+    <div id="dialogue-condition-params" class="rp-section"></div>
+    <div class="rp-section">
+      <label>If condition NOT met — alt dialogue</label>
+      <textarea id="dialogue-condition-fail-text" class="rp-textarea" rows="2" placeholder="e.g. Come back when you have the key..." maxlength="300"></textarea>
+    </div>
+  </div>
+
+  <div class="settings-divider"></div>
+  <h4 class="settings-section-title">Preview</h4>
+  <div class="rp-section">
+    <button class="btn btn-sm btn-outline-light" id="btn-preview-dialogue" style="width:100%">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Preview Dialogue
+    </button>
+  </div>
+</div>
+        <div id="avatar-custom-anim" style="display:none">
+          <div class="settings-divider"></div>
+          <h4 class="settings-section-title">Keyframes</h4>
+          <div class="rp-section">
+            <div class="keyframe-timeline" id="keyframe-timeline">
+              <div class="keyframe-track" id="keyframe-track"></div>
+            </div>
+            <div class="keyframe-controls">
+              <button class="btn btn-sm btn-outline-light" id="btn-add-keyframe">+ Keyframe</button>
+              <button class="btn btn-sm btn-outline-light" id="btn-play-anim">▶ Preview</button>
+            </div>
+          </div>
+          <div id="keyframe-props" style="display:none">
+            <div class="rp-section">
+              <label>Keyframe <span id="kf-index">0</span></label>
+              <div class="rp-row">
+                <div class="rp-field"><span>Time</span><input type="number" id="kf-time" step="0.1" min="0"></div>
+                <div class="rp-field"><span>Dur</span><input type="number" id="kf-duration" step="0.1" min="0.1"></div>
+              </div>
+            </div>
+            <div class="rp-section">
+              <label>Pose</label>
+              <select id="kf-pose" class="rp-select">
+                <option value="idle">Idle</option>
+                <option value="run">Run</option>
+                <option value="jump">Jump</option>
+                <option value="dance">Dance</option>
+                <option value="wave">Wave</option>
+                <option value="sit">Sit</option>
+              </select>
+            </div>
+            <div class="rp-section">
+              <label>Movement</label>
+              <div class="rp-row">
+                <div class="rp-field"><span>ΔX</span><input type="number" id="kf-dx" step="1"></div>
+                <div class="rp-field"><span>ΔY</span><input type="number" id="kf-dy" step="1"></div>
+              </div>
+            </div>
+            <div class="rp-section">
+              <label>Direction</label>
+              <select id="kf-dir" class="rp-select">
+                <option value="0">Keep Current</option>
+                <option value="1">Face Right</option>
+                <option value="-1">Face Left</option>
+              </select>
+            </div>
+            <div class="rp-section">
+              <label>Easing</label>
+              <select id="kf-easing" class="rp-select">
+                <option value="linear">Linear</option>
+                <option value="easeIn">Ease In</option>
+                <option value="easeOut">Ease Out</option>
+                <option value="easeInOut">Ease In-Out</option>
+                <option value="bounce">Bounce</option>
+              </select>
+            </div>
+            <button class="btn btn-danger btn-sm" id="btn-delete-keyframe" style="margin-top:6px">Delete Keyframe</button>
+          </div>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="rp-section">
+          <label>Avatar Colors</label>
+          <div class="rp-row" style="margin-bottom:6px">
+            <div class="rp-field"><span>Body</span><input type="color" id="avatar-body-color" value="#ffffff" class="rp-color-sm"></div>
+            <div class="rp-field"><span>Head</span><input type="color" id="avatar-head-color" value="#ffffff" class="rp-color-sm"></div>
+          </div>
+          <div class="rp-row">
+            <div class="rp-field"><span>Eyes</span><input type="color" id="avatar-eye-color" value="#000000" class="rp-color-sm"></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="rp-checkbox">
+            <input type="checkbox" id="avatar-use-player">
+            <label for="avatar-use-player">Use Player's Own Avatar</label>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-full rp-delete" id="btn-delete-avatar">Delete Avatar</button>
+      </div>
     </div>
 
     <!-- ITEMS PANEL / ASSET STORE -->
@@ -284,6 +538,7 @@
         <button class="filter-btn" data-cat="powerup">Powerups</button>
         <button class="filter-btn" data-cat="collectible">Items</button>
         <button class="filter-btn" data-cat="model">Models</button>
+        <button class="filter-btn" data-cat="avatar">Avatar</button>
       </div>
       <div id="asset-list" class="asset-list"></div>
     </div>
@@ -310,7 +565,6 @@
             <div class="rp-field"><span>H</span><input type="number" id="set-world-h"></div>
           </div>
         </div>
-
         <div class="settings-divider"></div>
         <h4 class="settings-section-title">Fog</h4>
         <div class="rp-section">
@@ -337,7 +591,6 @@
             <input type="range" id="set-fog-end" min="50" max="1000" step="10" value="400" class="rp-slider">
           </div>
         </div>
-
         <div class="settings-divider"></div>
         <h4 class="settings-section-title">Darkness</h4>
         <div class="rp-section">
@@ -372,7 +625,6 @@
             <input type="range" id="set-flicker" min="0" max="0.05" step="0.001" value="0.003" class="rp-slider">
           </div>
         </div>
-
         <div class="settings-divider"></div>
         <h4 class="settings-section-title">Effects</h4>
         <div class="rp-section">
@@ -388,7 +640,6 @@
           </div>
           <div class="rp-section"><label>Color</label><input type="color" id="set-vignette-color" class="rp-color" value="#000000"></div>
         </div>
-
         <div class="settings-divider"></div>
         <h4 class="settings-section-title">Tint</h4>
         <div class="rp-section">
@@ -401,7 +652,6 @@
             <input type="range" id="set-tint-opacity" min="0" max="0.5" step="0.01" value="0.1" class="rp-slider">
           </div>
         </div>
-
         <div class="modal-buttons">
           <button class="btn btn-outline-light" id="btn-settings-cancel">Cancel</button>
           <button class="btn btn-white" id="btn-settings-save">Apply</button>

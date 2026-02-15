@@ -40,14 +40,27 @@
       </div>
     </div>
 
-    <!-- NOTE OVERLAY -->
-    <div id="note-overlay" style="display:none">
-      <div class="note-panel">
-        <p id="note-text"></p>
-        <span class="note-hint">Release to close</span>
-      </div>
-    </div>
+ <!-- NOTE OVERLAY -->
+<div id="note-overlay" style="display:none">
+  <div class="note-panel">
+    <div class="note-icon"></div>
+    <p id="note-text"></p>
+    <span class="note-hint" id="note-hint">Release to close</span>
+  </div>
+</div>
 
+<!-- DIALOGUE OVERLAY -->
+<div id="dialogue-overlay" style="display:none">
+  <div class="dialogue-box">
+    <div class="dialogue-name" id="dialogue-name"></div>
+    <div class="dialogue-text" id="dialogue-text"></div>
+    <div class="dialogue-choices" id="dialogue-choices" style="display:none"></div>
+    <div class="dialogue-indicator" id="dialogue-indicator">
+      <span class="dialogue-counter" id="dialogue-counter"></span>
+      <span class="dialogue-continue" id="dialogue-continue">Click or press E ▸</span>
+    </div>
+  </div>
+</div>
     <!-- MOBILE CONTROLS -->
     <div id="mobile-controls" style="display:none">
       <!-- Left: Joystick -->

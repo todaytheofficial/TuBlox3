@@ -678,6 +678,226 @@ body {
   .note-panel p { font-size: 14px; }
 }
 
+/* ==================== NOTE OVERLAY ==================== */
+.note-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.note-panel::before {
+  display: none;
+}
+
+/* ==================== DIALOGUE SYSTEM ==================== */
+#dialogue-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.55);
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 80px;
+  pointer-events: auto;
+  animation: dialogueFadeIn 0.2s ease;
+}
+
+@keyframes dialogueFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialogue-box {
+  width: 560px;
+  max-width: 92vw;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 18px 22px;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: dialogueSlideUp 0.25s ease-out;
+}
+
+@keyframes dialogueSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.dialogue-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.dialogue-name .d-name-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #fff;
+}
+
+.dialogue-name .d-name-emotion {
+  font-size: 13px;
+}
+
+.dialogue-text {
+  font-size: 14px;
+  color: #bbb;
+  line-height: 1.6;
+  min-height: 36px;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.dialogue-text .d-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: #fff;
+  animation: dCursorBlink 0.6s infinite;
+  vertical-align: text-bottom;
+  margin-left: 2px;
+}
+
+@keyframes dCursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.dialogue-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #444;
+}
+
+.dialogue-counter {
+  font-size: 10px;
+  color: #555;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.dialogue-continue {
+  color: #666;
+  font-size: 11px;
+  animation: dContinuePulse 1.5s infinite;
+}
+
+@keyframes dContinuePulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.dialogue-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.dialogue-choice-btn {
+  padding: 9px 12px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 6px;
+  color: #999;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.dialogue-choice-btn:hover,
+.dialogue-choice-btn:active {
+  border-color: #fff;
+  color: #fff;
+  background: #1a1a1a;
+}
+
+.dialogue-choice-btn .d-choice-key {
+  font-size: 10px;
+  font-weight: 700;
+  color: #555;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  padding: 2px 5px;
+  border-radius: 3px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Dialogue text effects */
+.d-text-shake {
+  animation: dShake 0.05s infinite;
+}
+
+@keyframes dShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  50% { transform: translate(1px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+}
+
+.d-text-wave span {
+  display: inline-block;
+  animation: dWave 1s ease infinite;
+}
+
+.d-text-glitch {
+  animation: dGlitch 0.3s infinite;
+}
+
+@keyframes dWave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes dGlitch {
+  0% { text-shadow: 2px 0 #333, -2px 0 #555; }
+  25% { text-shadow: -2px 0 #333, 2px 0 #555; }
+  50% { text-shadow: 0 2px #333, 0 -2px #555; }
+  75% { text-shadow: 1px 1px #333, -1px -1px #555; }
+  100% { text-shadow: 0 0 transparent; }
+}
+
+/* Mobile dialogue */
+@media (max-width: 768px) {
+  #dialogue-overlay {
+    padding-bottom: 140px;
+  }
+
+  .dialogue-box {
+    padding: 14px 16px;
+    border-radius: 8px;
+  }
+
+  .dialogue-text {
+    font-size: 13px;
+  }
+
+  .dialogue-choice-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
 /* Hide mobile on desktop */
 @media (hover: hover) and (pointer: fine) {
   #mobile-controls { display: none !important; }
