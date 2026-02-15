@@ -5,6 +5,23 @@
   let gameData = null;
 
   // ==================== AUTH ====================
+    function startSidebarAvatar() {
+       const canvas = document.getElementById('sidebar-avatar');
+       if (!canvas) return;
+       const c = canvas.getContext('2d');
+       const W = canvas.width, H = canvas.height;
+   
+       function frame(ts) {
+         const time = ts / 1000;
+         c.clearRect(0, 0, W, H);
+         c.fillStyle = '#0e0e0e';
+         c.fillRect(0, 0, W, H);
+         TC.draw(c, W / 2 - 8, 2, 16, 28, 1, 'idle', Math.floor(time / 0.5) % 2,
+           userData.avatar, null, false, time, { equipped: userData.equipped || {} });
+         requestAnimationFrame(frame);
+       }
+       requestAnimationFrame(frame);
+     }
 
   async function checkAuth() {
     try {
@@ -16,7 +33,7 @@
       document.getElementById('sidebar-urus').textContent = userData.urus;
       document.getElementById('sidebar-strikes').textContent = userData.dailyStrikes;
 
-      TC.drawSidebar(document.getElementById('sidebar-avatar'), userData.avatar);
+      startSidebarAvatar()ж
       return userData;
     } catch (e) {
       window.location.href = '/auth';
